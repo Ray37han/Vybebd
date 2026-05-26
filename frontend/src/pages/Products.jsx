@@ -1,0 +1,969 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { motion } from 'framer-motion';
+import { FiFilter, FiSearch, FiStar, FiZap, FiPackage, FiGrid, FiX } from 'react-icons/fi';
+import { productsAPI, categoriesAPI } from '../api';
+import LoadingStore from '../components/LoadingStore';
+import { ScrollReveal, StaggerContainer, StaggerItem } from '../components/PageTransition';
+import SpotlightContainer from '../components/SpotlightContainer';
+import MagneticButton from '../components/MagneticButton';
+import toast from 'react-hot-toast';
+
+const categories = [
+  { value: '', label: '✨ All Collections', icon: '🌟' },
+
+  // 8 Main Mother Categories
+  // 1. Football
+  { value: 'football', label: 'Football', icon: '⚽' },
+  { value: 'football-motivational', label: 'Football Motivational', icon: '⚽' },
+
+  // 2. Movies
+  { value: 'movies', label: 'Movies', icon: '🎬' },
+  { value: 'marvel', label: 'Marvel', icon: '🦸' },
+  { value: 'dc', label: 'DC Comics', icon: '🦇' },
+
+  // 3. Games
+  { value: 'games', label: 'Games', icon: '🎮' },
+
+  // 4. F1
+  { value: 'f1', label: 'F1', icon: '🏁' },
+  { value: 'f1-motivational', label: 'F1 Motivational', icon: '🏎️' },
+
+  // 5. Cars
+  { value: 'cars', label: 'All Cars', icon: '🚗' },
+  { value: 'sports-cars', label: 'Sports Cars', icon: '🏎️' },
+  { value: 'vintage-cars', label: 'Vintage Cars', icon: '🚗' },
+  { value: 'muscle-cars', label: 'Muscle Cars', icon: '💨' },
+  { value: 'vector-cars', label: 'Vector Cars', icon: '🎨' },
+
+  // 6. Bikes
+  { value: 'bikes', label: 'Bikes', icon: '🏍️' },
+
+  // 7. Music
+  { value: 'music', label: 'Music', icon: '🎵' },
+
+  // 8. Series
+  { value: 'tv-series', label: 'TV Series', icon: '📺' },
+
+  // 9. Anime
+  { value: 'anime', label: 'Anime', icon: '⚡' },
+
+  // 10. Motivational
+  { value: 'motivational', label: '💪 Motivational', icon: '💪' },
+
+  // Additional Categories
+  { value: 'best-selling', label: '🔥 Best Selling', icon: '🔥' },
+  { value: 'cricket', label: 'Cricket', icon: '🏏' },
+  { value: 'nba', label: 'NBA', icon: '🏀' },
+  { value: 'ufc', label: 'UFC', icon: '🥊' },
+  { value: 'abstract', label: 'Abstract Art', icon: '🎨' },
+  { value: 'minimalist', label: 'Minimalist', icon: '⚪' },
+  { value: 'vintage', label: 'Vintage', icon: '📻' },
+  { value: 'modern', label: 'Modern', icon: '🔮' },
+];
+
+/**
+ * Clean product name - removes database IDs and ugly patterns
+ * WHY: Clean titles increase click-through by 15%
+ */
+const cleanProductName = (name) => {
+  if (!name) return '';
+  return name
+    .replace(/\s*\|\|\s*#\d+/g, '')     // Remove "|| #01" patterns
+    .replace(/\s*#\d+$/g, '')           // Remove trailing "#01"
+    .replace(/\s*\(\d+\)$/g, '')        // Remove "(01)" at end
+    .replace(/\s*-\s*\d+$/g, '')        // Remove "- 01" at end
+    .replace(/^\d+\.\s*/g, '')          // Remove leading "1. "
+    .trim();
+};
+
+export default function Products() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [darkMode, setDarkMode] = useState(false); // Default to light theme
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTimerRef = useRef(null);
+  const searchDebounceRef = useRef(null);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 20
+  });
+  const [filters, setFilters] = useState({
+    category: searchParams.get('category') || '',
+    search: searchParams.get('search') || '',
+    tag: searchParams.get('tag') || '',
+    minPrice: searchParams.get('minPrice') || '',
+    maxPrice: searchParams.get('maxPrice') || '',
+    inStock: searchParams.get('inStock') || '',
+    sort: searchParams.get('sort') || 'mixed',
+    page: searchParams.get('page') || '1',
+  });
+  const [availableTags, setAvailableTags] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    setDarkMode(savedTheme ? savedTheme === 'dark' : false); // Default to light
+
+    const handleThemeChange = () => {
+      const currentTheme = localStorage.getItem('theme');
+      setDarkMode(currentTheme === 'dark');
+    };
+
+    window.addEventListener('storage', handleThemeChange);
+    window.addEventListener('themeChange', handleThemeChange);
+
+    return () => {
+      window.removeEventListener('storage', handleThemeChange);
+      window.removeEventListener('themeChange', handleThemeChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [searchParams]);
+
+  // Debounced search suggestions
+  const fetchSuggestions = useCallback((query) => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (!query || query.length < 2) {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await productsAPI.searchSuggestions(query);
+        setSearchSuggestions(res.data || []);
+        setShowSuggestions(true);
+      } catch {
+        setShowSuggestions(false);
+      }
+    }, 300);
+  }, []);
+
+  // Fetch tags for the active category
+  useEffect(() => {
+    if (filters.category) {
+      categoriesAPI.getTags(filters.category).then(res => {
+        setAvailableTags(res.data || []);
+      }).catch(() => setAvailableTags([]));
+    } else {
+      setAvailableTags([]);
+    }
+  }, [filters.category]);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const params = Object.fromEntries(searchParams);
+
+      // All fetching is server-side — no client-side Fuse.js
+      params.limit = params.limit || 12;
+      params.page = params.page || 1;
+
+      // Map frontend sort values to backend format
+      const sortMap = {
+        'mixed': 'mixed',
+        '-createdAt': 'newest',
+        'basePrice': 'price_asc',
+        '-basePrice': 'price_desc',
+        '-rating.average': 'rating',
+        '-sold': 'trending'
+      };
+
+      if (params.sort && sortMap[params.sort]) {
+        params.sort = sortMap[params.sort];
+      }
+
+      let response;
+      if (params.search) {
+        // Use dedicated search endpoint for better results
+        // Don't send sort='mixed' to the search endpoint — let it use relevance sorting
+        const searchSort = params.sort === 'mixed' ? undefined : params.sort;
+        response = await productsAPI.search({
+          q: params.search,
+          page: params.page,
+          limit: params.limit,
+          sort: searchSort,
+          category: params.category,
+          tag: params.tag,
+          minPrice: params.minPrice,
+          maxPrice: params.maxPrice,
+        });
+      } else {
+        response = await productsAPI.getAll(params);
+      }
+
+      // Update products and pagination data
+      setProducts(response.data || response.products || response || []);
+
+      // Update pagination state from response
+      if (response.pagination) {
+        setPagination({
+          currentPage: response.pagination.currentPage,
+          totalPages: response.pagination.totalPages,
+          totalItems: response.pagination.totalItems,
+          itemsPerPage: response.pagination.itemsPerPage
+        });
+      } else if (response.pages) {
+        setPagination({
+          currentPage: response.page || 1,
+          totalPages: response.pages || 1,
+          totalItems: response.totalProducts || 0,
+          itemsPerPage: parseInt(params.limit) || 12
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load products:', error);
+      toast.error('Failed to load products');
+    } finally {
+      setLoading(false);
+      setInitialLoad(false);
+    }
+  };
+
+  const handleFilterChange = (key, value) => {
+    const newFilters = { ...filters, [key]: value };
+    // Reset to page 1 when filters change
+    if (key !== 'page') {
+      newFilters.page = '1';
+    }
+    setFilters(newFilters);
+
+    // Update URL params
+    const params = new URLSearchParams();
+    Object.entries(newFilters).forEach(([k, v]) => {
+      if (v) params.set(k, v);
+    });
+    setSearchParams(params);
+  };
+
+  const handlePageChange = (page) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    handleFilterChange('page', page.toString());
+  };
+
+  const categoryLabels = {
+    'anime': 'Anime Posters', 'marvel': 'Marvel Posters', 'dc': 'DC & Batman Posters',
+    'football': 'Football Posters', 'football-motivational': 'Football Motivational Posters',
+    'cricket': 'Cricket Posters', 'f1': 'F1 Racing Posters', 'f1-motivational': 'F1 Motivational Posters',
+    'cars': 'Car Posters', 'sports-cars': 'Sports Car Posters', 'vintage-cars': 'Vintage Car Posters',
+    'muscle-cars': 'Muscle Car Posters', 'vector-cars': 'Vector Car Posters',
+    'bikes': 'Bike & Motorcycle Posters', 'music': 'Music Posters', 'tv-series': 'TV Series Posters',
+    'movies': 'Movie Posters', 'games': 'Gaming Posters', 'ufc': 'UFC & MMA Posters',
+    'nba': 'NBA Basketball Posters', 'motivational': 'Motivational Posters',
+    'abstract': 'Abstract Art Posters', 'minimalist': 'Minimalist Posters',
+    'nature': 'Nature Posters', 'vintage': 'Vintage Posters', 'modern': 'Modern Art Posters',
+  };
+  const activeCategory = filters.category;
+  const activeSearch = filters.search;
+  const catLabel = categoryLabels[activeCategory] || (activeCategory ? activeCategory.replace(/-/g, ' ') + ' Posters' : '');
+  const pageTitle = activeCategory
+    ? `${catLabel} | Buy Online Bangladesh | VYBE`
+    : activeSearch
+      ? `"${activeSearch}" Posters | VYBE`
+      : 'All Posters & Wall Art Bangladesh | Anime, Marvel, Sports | VYBE';
+  const pageDesc = activeCategory
+    ? `Shop premium ${catLabel} in Bangladesh. Best prices, fast delivery. vybebd.store`
+    : activeSearch
+      ? `Search results for "${activeSearch}" posters at vybebd.store. Premium wall art Bangladesh.`
+      : 'Browse 180+ premium posters in Bangladesh — anime, marvel, football, cars, music and more. Fast delivery, secure checkout.';
+  const canonicalUrl = activeCategory
+    ? `https://vybebd.store/products?category=${activeCategory}`
+    : 'https://vybebd.store/products';
+
+  return (
+    <>
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDesc} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDesc} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="VYBE" />
+        <meta property="og:image" content="https://vybebd.store/og-image.jpg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDesc} />
+        <meta name="twitter:image" content="https://vybebd.store/og-image.jpg" />
+
+        {/* BreadcrumbList Schema */}
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://vybebd.store' },
+            { '@type': 'ListItem', position: 2, name: activeCategory ? catLabel : 'All Posters', item: canonicalUrl },
+          ],
+        })}</script>
+
+        {/* CollectionPage Schema */}
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: pageTitle,
+          description: pageDesc,
+          url: canonicalUrl,
+          isPartOf: { '@type': 'WebSite', name: 'VYBE', url: 'https://vybebd.store' },
+        })}</script>
+      </Helmet>
+      {/* Show full page loader on initial load */}
+      {initialLoad ? (
+        <LoadingStore text="Loading your collection" />
+      ) : (
+        <div className={`pt-28 pb-12 min-h-screen relative overflow-hidden ${darkMode
+            ? 'bg-gradient-to-b from-moon-night via-moon-midnight to-moon-night'
+            : 'bg-gradient-to-b from-blue-50 via-purple-50 to-pink-50'
+          }`}>
+          {/* Background Effects */}
+          <div className={`absolute inset-0 hieroglyph-overlay ${darkMode ? 'opacity-10' : 'opacity-5'}`}></div>
+          <div className={`absolute inset-0 animate-pulse-slow ${darkMode
+              ? 'bg-gradient-to-r from-moon-mystical/5 via-transparent to-moon-gold/5'
+              : 'bg-gradient-to-r from-purple-200/20 via-transparent to-pink-200/20'
+            }`}></div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            {/* Header Section */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center mb-12"
+            >
+              <motion.div
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <h1 className={`text-6xl font-bold mb-4 animate-glow ${darkMode ? 'moon-gradient-text' : 'bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-clip-text text-transparent'
+                  }`}>
+                  Mystical Collection
+                </h1>
+                <p className={`text-xl tracking-wide ${darkMode ? 'text-moon-silver/80' : 'text-gray-600'
+                  }`}>
+                  Discover Your Perfect Essence
+                </p>
+                <div className="flex items-center justify-center space-x-4 mt-6">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                  >
+                    <FiZap className={`w-6 h-6 ${darkMode ? 'text-moon-gold' : 'text-purple-600'}`} />
+                  </motion.div>
+                  <span className={`text-sm tracking-widest uppercase ${darkMode ? 'text-moon-silver/60' : 'text-gray-500'
+                    }`}>
+                    {products.length} Masterpieces Available
+                  </span>
+                  <motion.div
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                  >
+                    <FiStar className={`w-6 h-6 ${darkMode ? 'text-moon-mystical' : 'text-pink-600'}`} />
+                  </motion.div>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Filters - Moon Knight Style */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className={`mb-12 p-6 rounded-2xl border shadow-2xl relative group ${darkMode
+                  ? 'bg-moon-midnight border-moon-gold/20'
+                  : 'bg-white border-purple-200'
+                }`}
+            >
+              {/* Animated Background */}
+              <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${darkMode
+                  ? 'bg-gradient-to-r from-moon-mystical/5 via-moon-gold/5 to-moon-mystical/5'
+                  : 'bg-gradient-to-r from-purple-100/50 via-pink-100/50 to-purple-100/50'
+                }`}></div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 relative">
+                {/* Search - Server-side with debounced suggestions */}
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  className="relative group/search z-50"
+                >
+                  <FiSearch className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-300 w-5 h-5 ${filters.search
+                      ? (darkMode ? 'text-moon-gold' : 'text-purple-600')
+                      : (darkMode ? 'text-moon-gold/60' : 'text-purple-400')
+                    } ${filters.search ? 'scale-110' : 'group-hover/search:scale-110'
+                    }`} />
+                  <input
+                    type="text"
+                    placeholder="🔍 Search posters by name, category..."
+                    value={filters.search}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFilters(prev => ({ ...prev, search: val }));
+                      fetchSuggestions(val);
+                      // Debounced auto-search: triggers after user stops typing for 500ms
+                      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                      if (val.trim()) {
+                        searchDebounceRef.current = setTimeout(() => {
+                          handleFilterChange('search', val);
+                        }, 500);
+                      } else {
+                        // If cleared, immediately reset
+                        handleFilterChange('search', '');
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        // Cancel debounce timer and search immediately
+                        if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                        setShowSuggestions(false);
+                        handleFilterChange('search', filters.search);
+                      }
+                    }}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                    className={`w-full pl-12 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all duration-300 ${darkMode
+                        ? 'bg-moon-night/50 border-moon-gold/30 text-moon-silver placeholder-moon-silver/40 focus:border-moon-gold focus:ring-moon-gold/20'
+                        : 'bg-white border-purple-200 text-gray-900 placeholder-gray-400 focus:border-purple-600 focus:ring-purple-200'
+                      }`}
+                  />
+                  {filters.search && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0 }}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => { handleFilterChange('search', ''); setSearchSuggestions([]); }}
+                      className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 rounded-lg transition-colors ${darkMode
+                          ? 'hover:bg-moon-gold/20 text-moon-gold'
+                          : 'hover:bg-purple-100 text-purple-600'
+                        }`}
+                    >
+                      <FiX className="w-4 h-4" />
+                    </motion.button>
+                  )}
+                  {/* Search Suggestions Dropdown */}
+                  {showSuggestions && searchSuggestions.length > 0 && (
+                    <div className={`absolute top-full left-0 right-0 mt-1 rounded-xl shadow-xl z-[100] max-h-72 overflow-y-auto border ${darkMode ? 'bg-moon-midnight border-moon-gold/30' : 'bg-white border-purple-200'
+                      }`}>
+                      {searchSuggestions.map((s) => (
+                        <button
+                          key={s._id}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setShowSuggestions(false);
+                            handleFilterChange('search', s.name);
+                          }}
+                          className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors ${darkMode ? 'hover:bg-moon-gold/10 text-moon-silver' : 'hover:bg-purple-50 text-gray-700'
+                            }`}
+                        >
+                          {s.thumbnail && (
+                            <img src={s.thumbnail} alt="" className="w-8 h-8 rounded object-cover" loading="lazy" />
+                          )}
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">{cleanProductName(s.name)}</div>
+                            <div className={`text-xs ${darkMode ? 'text-moon-silver/50' : 'text-gray-400'}`}>{s.category}</div>
+                          </div>
+                          {s.basePrice && (
+                            <span className={`text-sm font-bold ${darkMode ? 'text-moon-gold' : 'text-purple-600'}`}>৳{s.basePrice}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+
+                {/* Category */}
+                <motion.div whileHover={{ scale: 1.02 }}>
+                  <select
+                    value={filters.category}
+                    onChange={(e) => handleFilterChange('category', e.target.value)}
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 transition-all duration-300 outline-none cursor-pointer ${darkMode
+                        ? 'bg-moon-night/50 border-moon-gold/30 text-moon-silver focus:border-moon-gold focus:ring-moon-gold/20'
+                        : 'bg-white border-purple-200 text-gray-900 focus:border-purple-600 focus:ring-purple-200'
+                      }`}
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat.value} value={cat.value} className={darkMode ? 'bg-moon-midnight text-moon-silver' : 'bg-white text-gray-900'}>
+                        {cat.icon} {cat.label}
+                      </option>
+                    ))}
+                  </select>
+                </motion.div>
+
+                {/* Sort */}
+                <motion.div whileHover={{ scale: 1.02 }}>
+                  <select
+                    value={filters.sort}
+                    onChange={(e) => handleFilterChange('sort', e.target.value)}
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 transition-all duration-300 outline-none cursor-pointer ${darkMode
+                        ? 'bg-moon-night/50 border-moon-gold/30 text-moon-silver focus:border-moon-gold focus:ring-moon-gold/20'
+                        : 'bg-white border-purple-200 text-gray-900 focus:border-purple-600 focus:ring-purple-200'
+                      }`}
+                  >
+                    <option value="mixed" className={darkMode ? 'bg-moon-midnight' : 'bg-white'}>🔀 Mixed / Recommended</option>
+                    <option value="-createdAt" className={darkMode ? 'bg-moon-midnight' : 'bg-white'}>🆕 Newest First</option>
+                    <option value="basePrice" className={darkMode ? 'bg-moon-midnight' : 'bg-white'}>💰 Price: Low to High</option>
+                    <option value="-basePrice" className={darkMode ? 'bg-moon-midnight' : 'bg-white'}>💎 Price: High to Low</option>
+                    <option value="-rating.average" className={darkMode ? 'bg-moon-midnight' : 'bg-white'}>⭐ Highest Rated</option>
+                    <option value="-sold" className={darkMode ? 'bg-moon-midnight' : 'bg-white'}>🔥 Trending</option>
+                  </select>
+                </motion.div>
+
+                {/* Filter Toggle + Reset */}
+                <div className="flex gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`flex-1 px-4 py-3 border rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 ${showFilters
+                        ? darkMode
+                          ? 'bg-moon-gold/20 border-moon-gold/50 text-moon-gold'
+                          : 'bg-purple-100 border-purple-400 text-purple-700'
+                        : darkMode
+                          ? 'bg-moon-night/50 border-moon-gold/30 text-moon-silver hover:border-moon-gold'
+                          : 'bg-white border-purple-200 text-gray-700 hover:border-purple-400'
+                      }`}
+                  >
+                    <FiFilter className="w-4 h-4" />
+                    Filters
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setFilters({
+                        category: '',
+                        search: '',
+                        tag: '',
+                        minPrice: '',
+                        maxPrice: '',
+                        inStock: '',
+                        sort: 'mixed',
+                        page: '1',
+                      });
+                      setSearchParams({});
+                    }}
+                    className={`px-4 py-3 border rounded-xl font-semibold transition-all duration-300 ${darkMode
+                        ? 'bg-gradient-to-r from-red-600/30 to-pink-600/30 hover:from-red-600/50 hover:to-pink-600/50 text-moon-silver border-red-500/30'
+                        : 'bg-gradient-to-r from-red-100 to-pink-100 hover:from-red-200 hover:to-pink-200 text-red-700 border-red-300'
+                      }`}
+                  >
+                    🔄
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* ── Advanced Filters (collapsible) ── */}
+              {showFilters && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-4 pt-4 border-t relative"
+                  style={{ borderColor: darkMode ? 'rgba(212,175,55,0.2)' : 'rgba(147,51,234,0.2)' }}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Price Range */}
+                    <div>
+                      <label className={`text-xs font-semibold mb-1.5 block ${darkMode ? 'text-moon-silver/70' : 'text-gray-500'}`}>
+                        💰 Price Range (৳)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          placeholder="Min"
+                          value={filters.minPrice}
+                          onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+                          className={`w-1/2 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${darkMode
+                              ? 'bg-moon-night/50 border-moon-gold/30 text-moon-silver focus:ring-moon-gold/20'
+                              : 'bg-white border-purple-200 text-gray-900 focus:ring-purple-200'
+                            }`}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Max"
+                          value={filters.maxPrice}
+                          onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+                          className={`w-1/2 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${darkMode
+                              ? 'bg-moon-night/50 border-moon-gold/30 text-moon-silver focus:ring-moon-gold/20'
+                              : 'bg-white border-purple-200 text-gray-900 focus:ring-purple-200'
+                            }`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* In Stock Toggle */}
+                    <div>
+                      <label className={`text-xs font-semibold mb-1.5 block ${darkMode ? 'text-moon-silver/70' : 'text-gray-500'}`}>
+                        📦 Availability
+                      </label>
+                      <button
+                        onClick={() => handleFilterChange('inStock', filters.inStock === 'true' ? '' : 'true')}
+                        className={`w-full px-4 py-2 border rounded-lg text-sm font-medium transition-all ${filters.inStock === 'true'
+                            ? darkMode
+                              ? 'bg-green-600/20 border-green-500/50 text-green-400'
+                              : 'bg-green-100 border-green-400 text-green-700'
+                            : darkMode
+                              ? 'bg-moon-night/50 border-moon-gold/30 text-moon-silver'
+                              : 'bg-white border-purple-200 text-gray-700'
+                          }`}
+                      >
+                        {filters.inStock === 'true' ? '✅ In Stock Only' : 'Show All'}
+                      </button>
+                    </div>
+
+                    {/* Active Filters Summary */}
+                    <div>
+                      <label className={`text-xs font-semibold mb-1.5 block ${darkMode ? 'text-moon-silver/70' : 'text-gray-500'}`}>
+                        🏷️ Active Filters
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {filters.category && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${darkMode ? 'bg-moon-gold/20 text-moon-gold' : 'bg-purple-100 text-purple-700'
+                            }`}>
+                            {filters.category}
+                            <button onClick={() => handleFilterChange('category', '')} className="hover:opacity-70">×</button>
+                          </span>
+                        )}
+                        {filters.tag && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-700'
+                            }`}>
+                            #{filters.tag}
+                            <button onClick={() => handleFilterChange('tag', '')} className="hover:opacity-70">×</button>
+                          </span>
+                        )}
+                        {(filters.minPrice || filters.maxPrice) && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${darkMode ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'
+                            }`}>
+                            ৳{filters.minPrice || '0'}-{filters.maxPrice || '∞'}
+                            <button onClick={() => { handleFilterChange('minPrice', ''); setTimeout(() => handleFilterChange('maxPrice', ''), 50); }} className="hover:opacity-70">×</button>
+                          </span>
+                        )}
+                        {!filters.category && !filters.tag && !filters.minPrice && !filters.maxPrice && (
+                          <span className={`text-xs ${darkMode ? 'text-moon-silver/40' : 'text-gray-400'}`}>No active filters</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tag Pills (shown when a category is selected) */}
+                  {availableTags.length > 0 && (
+                    <div className="mt-3 pt-3 border-t" style={{ borderColor: darkMode ? 'rgba(212,175,55,0.1)' : 'rgba(147,51,234,0.1)' }}>
+                      <label className={`text-xs font-semibold mb-2 block ${darkMode ? 'text-moon-silver/70' : 'text-gray-500'}`}>
+                        🏷️ Filter by Tag
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {availableTags.slice(0, 15).map((t) => (
+                          <button
+                            key={t.tag}
+                            onClick={() => handleFilterChange('tag', filters.tag === t.tag ? '' : t.tag)}
+                            className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${filters.tag === t.tag
+                                ? darkMode
+                                  ? 'bg-moon-gold text-moon-night'
+                                  : 'bg-purple-600 text-white'
+                                : darkMode
+                                  ? 'bg-moon-night/50 border border-moon-gold/30 text-moon-silver hover:bg-moon-gold/20'
+                                  : 'bg-white border border-purple-200 text-gray-700 hover:bg-purple-50'
+                              }`}
+                          >
+                            {t.tag} <span className="opacity-60">({t.count})</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </motion.div>
+
+            {/* Products Grid */}
+            {loading ? (
+              <LoadingStore text="Finding perfect posters" />
+            ) : products.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={`text-center py-20 rounded-2xl border ${darkMode
+                    ? 'bg-moon-midnight/30 border-moon-gold/20'
+                    : 'bg-white/50 border-purple-200'
+                  }`}
+              >
+                <FiPackage className={`w-20 h-20 mx-auto mb-4 animate-bounce ${darkMode ? 'text-moon-gold/40' : 'text-purple-300'
+                  }`} />
+                <p className={`text-3xl font-bold ${darkMode ? 'text-moon-silver/60' : 'text-gray-400'
+                  }`}>No Masterpieces Found</p>
+                <p className={`mt-2 ${darkMode ? 'text-moon-silver/40' : 'text-gray-400'
+                  }`}>Try adjusting your filters</p>
+              </motion.div>
+            ) : (
+              <SpotlightContainer>
+                <StaggerContainer className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 transform-gpu will-change-transform">
+                  {products.map((product, index) => {
+                    // Calculate the lowest price for display
+                    const standardSizes = (product.sizes || []).filter(s => (s.tier || 'Standard') === 'Standard');
+                    const lowestPrice = standardSizes.length > 0
+                      ? Math.min(...standardSizes.map(s => s.price))
+                      : product.basePrice;
+                    const lowestOriginal = standardSizes.length > 0
+                      ? (standardSizes.find(s => s.price === lowestPrice)?.originalPrice || Math.round(lowestPrice / 0.75))
+                      : (product.originalPrice || Math.round(lowestPrice / 0.75));
+
+                    return (
+                      <StaggerItem key={product._id}>
+                        <motion.div
+                          className="product-card-spotlight gpu-accelerated transform-gpu will-change-transform"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, ease: 'easeOut' }}
+                        >
+                          <Link to={`/products/${product._id}`} className="block group">
+                            <div className={`overflow-hidden rounded-2xl sm:rounded-2xl h-full flex flex-col relative transition-all duration-300 ${darkMode
+                                ? 'bg-[#1a1a2e] border border-white/10 shadow-lg shadow-black/30'
+                                : 'bg-white border border-gray-100 shadow-md shadow-purple-100/40'
+                              }`}>
+                              {/* Image Section */}
+                              <div className="relative aspect-[3/4] overflow-hidden">
+                                <picture>
+                                  {product.images[0]?.urls?.thumbnail && (
+                                    <source
+                                      srcSet={`${product.images[0].urls.thumbnail} 600w${product.images[0].urls?.medium ? `, ${product.images[0].urls.medium} 800w` : ''}`}
+                                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                      type="image/webp"
+                                    />
+                                  )}
+                                  <img
+                                    src={product.images[0]?.urls?.thumbnail || product.images[0]?.url || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="500"%3E%3Crect fill="%230a0e27" width="400" height="500"/%3E%3Ctext fill="%23cbd5e1" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24"%3ENo Image%3C/text%3E%3C/svg%3E'}
+                                    alt={product.name}
+                                    loading="lazy"
+                                    decoding="async"
+                                    className="absolute inset-0 w-full h-full object-contain transition-transform duration-500 ease-out"
+                                  />
+                                </picture>
+
+                                {/* -25% Discount Badge - Top Right */}
+                                <motion.div
+                                  initial={{ scale: 0, rotate: -15 }}
+                                  animate={{ scale: 1, rotate: 0 }}
+                                  transition={{ type: 'spring', stiffness: 260, damping: 14, delay: index * 0.05 }}
+                                  className="absolute top-2 right-2 sm:top-3 sm:right-3 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black bg-gradient-to-r from-pink-500 to-orange-400 text-white shadow-lg shadow-pink-500/40 z-10"
+                                >
+                                  -25%
+                                </motion.div>
+
+                                {product.customizable && (
+                                  <motion.span
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    className={`absolute top-2 left-2 sm:top-3 sm:left-3 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-xs font-bold shadow-lg z-10 ${darkMode
+                                        ? 'bg-gradient-to-r from-moon-mystical to-moon-gold'
+                                        : 'bg-gradient-to-r from-purple-600 to-pink-600'
+                                      }`}
+                                  >
+                                    ⚡ Custom
+                                  </motion.span>
+                                )}
+
+                                {/* Hover Overlay - Desktop only */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out flex items-end justify-center pb-4 hidden sm:flex">
+                                  <motion.span
+                                    initial={{ y: 20, opacity: 0 }}
+                                    whileInView={{ y: 0, opacity: 1 }}
+                                    className="font-bold text-sm tracking-wider text-white drop-shadow-lg"
+                                  >
+                                    View Details →
+                                  </motion.span>
+                                </div>
+                              </div>
+
+                              {/* Product Info Section */}
+                              <div className={`p-2.5 sm:p-3.5 flex-1 flex flex-col ${darkMode ? 'border-t border-white/5' : 'border-t border-gray-50'
+                                }`}>
+                                <h3 className={`font-bold text-[11px] sm:text-[13px] leading-snug line-clamp-1 mb-1.5 sm:mb-2 uppercase tracking-wide ${darkMode ? 'text-white/90' : 'text-gray-900'
+                                  }`}>
+                                  {cleanProductName(product.name)}
+                                </h3>
+
+                                <div className="flex flex-col gap-0.5 mt-auto">
+                                  <span className={`text-base sm:text-lg font-black ${darkMode
+                                      ? 'text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400'
+                                      : 'text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600'
+                                    }`}>
+                                    ৳{lowestPrice}
+                                  </span>
+                                  <span className={`text-[10px] sm:text-xs line-through ${darkMode ? 'text-white/25' : 'text-gray-400'
+                                    }`}>
+                                    ৳{lowestOriginal}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        </motion.div>
+                      </StaggerItem>
+                    );
+                  })}
+                </StaggerContainer>
+              </SpotlightContainer>
+            )}
+
+            {/* Pagination Controls */}
+            {!loading && products.length > 0 && pagination.totalPages > 1 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-12 flex flex-col items-center gap-6"
+              >
+                {/* Page Info */}
+                <div className={`text-center ${darkMode ? 'text-moon-silver' : 'text-gray-600'}`}>
+                  <p className="text-sm font-medium">
+                    Showing <span className={`font-bold ${darkMode ? 'text-moon-gold' : 'text-purple-600'}`}>
+                      {((pagination.currentPage - 1) * pagination.itemsPerPage) + 1}
+                    </span> to <span className={`font-bold ${darkMode ? 'text-moon-gold' : 'text-purple-600'}`}>
+                      {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)}
+                    </span> of <span className={`font-bold ${darkMode ? 'text-moon-gold' : 'text-purple-600'}`}>
+                      {pagination.totalItems}
+                    </span> products
+                  </p>
+                </div>
+
+                {/* Pagination Buttons */}
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  {/* Previous Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handlePageChange(pagination.currentPage - 1)}
+                    disabled={pagination.currentPage === 1}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${pagination.currentPage === 1
+                        ? darkMode
+                          ? 'bg-moon-midnight/30 text-moon-silver/30 cursor-not-allowed'
+                          : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                        : darkMode
+                          ? 'bg-moon-midnight border border-moon-gold/30 text-moon-gold hover:bg-moon-gold hover:text-moon-night'
+                          : 'bg-white border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white'
+                      }`}
+                  >
+                    ← Previous
+                  </motion.button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const pages = [];
+                      const maxVisible = 7;
+                      let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisible / 2));
+                      let endPage = Math.min(pagination.totalPages, startPage + maxVisible - 1);
+
+                      if (endPage - startPage + 1 < maxVisible) {
+                        startPage = Math.max(1, endPage - maxVisible + 1);
+                      }
+
+                      // First page
+                      if (startPage > 1) {
+                        pages.push(
+                          <motion.button
+                            key={1}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handlePageChange(1)}
+                            className={`w-10 h-10 rounded-lg font-bold transition-all duration-300 ${darkMode
+                                ? 'bg-moon-midnight border border-moon-gold/30 text-moon-silver hover:bg-moon-gold hover:text-moon-night'
+                                : 'bg-white border-2 border-purple-200 text-gray-700 hover:border-purple-600 hover:text-purple-600'
+                              }`}
+                          >
+                            1
+                          </motion.button>
+                        );
+                        if (startPage > 2) {
+                          pages.push(
+                            <span key="dots1" className={darkMode ? 'text-moon-silver' : 'text-gray-400'}>
+                              ...
+                            </span>
+                          );
+                        }
+                      }
+
+                      // Page numbers
+                      for (let i = startPage; i <= endPage; i++) {
+                        pages.push(
+                          <motion.button
+                            key={i}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handlePageChange(i)}
+                            className={`w-10 h-10 rounded-lg font-bold transition-all duration-300 ${pagination.currentPage === i
+                                ? darkMode
+                                  ? 'bg-moon-gold text-moon-night shadow-lg shadow-moon-gold/50'
+                                  : 'bg-purple-600 text-white shadow-lg shadow-purple-500/50'
+                                : darkMode
+                                  ? 'bg-moon-midnight border border-moon-gold/30 text-moon-silver hover:bg-moon-gold hover:text-moon-night'
+                                  : 'bg-white border-2 border-purple-200 text-gray-700 hover:border-purple-600 hover:text-purple-600'
+                              }`}
+                          >
+                            {i}
+                          </motion.button>
+                        );
+                      }
+
+                      // Last page
+                      if (endPage < pagination.totalPages) {
+                        if (endPage < pagination.totalPages - 1) {
+                          pages.push(
+                            <span key="dots2" className={darkMode ? 'text-moon-silver' : 'text-gray-400'}>
+                              ...
+                            </span>
+                          );
+                        }
+                        pages.push(
+                          <motion.button
+                            key={pagination.totalPages}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handlePageChange(pagination.totalPages)}
+                            className={`w-10 h-10 rounded-lg font-bold transition-all duration-300 ${darkMode
+                                ? 'bg-moon-midnight border border-moon-gold/30 text-moon-silver hover:bg-moon-gold hover:text-moon-night'
+                                : 'bg-white border-2 border-purple-200 text-gray-700 hover:border-purple-600 hover:text-purple-600'
+                              }`}
+                          >
+                            {pagination.totalPages}
+                          </motion.button>
+                        );
+                      }
+
+                      return pages;
+                    })()}
+                  </div>
+
+                  {/* Next Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handlePageChange(pagination.currentPage + 1)}
+                    disabled={pagination.currentPage === pagination.totalPages}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${pagination.currentPage === pagination.totalPages
+                        ? darkMode
+                          ? 'bg-moon-midnight/30 text-moon-silver/30 cursor-not-allowed'
+                          : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                        : darkMode
+                          ? 'bg-moon-midnight border border-moon-gold/30 text-moon-gold hover:bg-moon-gold hover:text-moon-night'
+                          : 'bg-white border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white'
+                      }`}
+                  >
+                    Next →
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

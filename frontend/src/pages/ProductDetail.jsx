@@ -1,0 +1,768 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiShoppingCart, FiHeart, FiStar, FiX, FiZoomIn, FiImage } from 'react-icons/fi';
+import { productsAPI, cartAPI } from '../api';
+import { useAuthStore, useCartStore } from '../store';
+import { useAnalytics } from '../context/AnalyticsContext';
+import { ScrollReveal } from '../components/PageTransition';
+import LoadingStore from '../components/LoadingStore';
+import { HeartButton } from '../components/AnimatedIcon';
+import MagneticButton from '../components/MagneticButton';
+import { TrustBanner } from '../components/TrustBadges';
+import toast from 'react-hot-toast';
+
+export default function ProductDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedTier, setSelectedTier] = useState('Standard');
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedFrame, setSelectedFrame] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const [isAdded, setIsAdded] = useState(false);
+  const [darkMode, setDarkMode] = useState(false); // Default to light theme
+  const { isAuthenticated } = useAuthStore();
+  const addToCart = useCartStore((state) => state.addItem);
+  const { trackEvent } = useAnalytics();
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    setDarkMode(savedTheme === 'dark');
+
+    const handleThemeChange = () => {
+      const currentTheme = localStorage.getItem('theme');
+      setDarkMode(currentTheme === 'dark');
+    };
+
+    window.addEventListener('storage', handleThemeChange);
+    window.addEventListener('themeChange', handleThemeChange);
+
+    return () => {
+      window.removeEventListener('storage', handleThemeChange);
+      window.removeEventListener('themeChange', handleThemeChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    fetchProduct();
+  }, [id]);
+
+  const fetchProduct = async () => {
+    try {
+      const response = await productsAPI.getOne(id);
+      const productData = response.data || response;
+      setProduct(productData);
+      // Track product view
+      trackEvent('product_view', {
+        productId: productData._id,
+        productName: productData.name,
+        productCategory: productData.category,
+      });
+    } catch (error) {
+      toast.error('Product not found');
+      navigate('/products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    // Defensive check for product
+    if (!product) {
+      toast.error('Product not found');
+      return;
+    }
+
+    if (!selectedSize) {
+      toast.error('Please select a size');
+      return;
+    }
+
+    try {
+      // Always add to local cart first for immediate feedback
+      addToCart({
+        product,
+        quantity,
+        size: selectedSize,
+        tier: selectedTier,
+        frame: selectedFrame || 'No Frame',
+        _id: Date.now().toString(),
+      });
+
+      // Track add-to-cart event
+      trackEvent('add_to_cart', {
+        productId: product._id,
+        productName: product.name,
+        productCategory: product.category,
+        quantity,
+        price: product.basePrice,
+      });
+
+      console.log('✅ Added to local cart');
+      toast.success('Added to cart!');
+
+      // Then sync with backend if authenticated (don't block on this)
+      if (isAuthenticated) {
+        const cartItem = {
+          productId: product._id,
+          quantity,
+          size: selectedSize,
+          tier: selectedTier,
+          frame: selectedFrame || 'No Frame',
+        };
+
+        try {
+          await cartAPI.add(cartItem);
+          console.log('✅ Synced with backend');
+        } catch (apiError) {
+          console.warn('⚠️ Failed to sync with backend, but item is in local cart:', apiError);
+          // Don't show error to user - local cart is updated successfully
+        }
+      }
+    } catch (error) {
+      console.error('❌ Failed to add to cart:', error);
+      toast.error('Failed to add to cart');
+    }
+  };
+
+  /**
+   * Buy Now - Add to cart and go directly to checkout
+   * Skips the cart page for faster purchase flow
+   */
+const handleBuyNow = () => {
+    if (!selectedSize) {
+      toast.error('Please select a size first');
+      return;
+    }
+
+    // Build a descriptive label: "Anime Poster – A3 (Premium)"
+    const productLabel =
+      selectedTier && selectedTier !== 'Standard'
+        ? `${product.name} – ${selectedSize} (${selectedTier})`
+        : `${product.name} – ${selectedSize}`;
+
+    const qs = new URLSearchParams({
+      productId: product._id,
+      name:      productLabel,
+      price:     String(currentPrice),
+      qty:       String(quantity),
+      size:      selectedSize,
+      frame:     selectedFrame || 'No Frame',
+    });
+
+    const buyNowImageUrl =
+      product.images?.[selectedImage]?.urls?.large ||
+      product.images?.[selectedImage]?.urls?.medium ||
+      product.images?.[selectedImage]?.url ||
+      product.images?.[0]?.urls?.large ||
+      product.images?.[0]?.urls?.medium ||
+      product.images?.[0]?.url ||
+      '';
+
+    if (buyNowImageUrl) {
+      qs.set('image', buyNowImageUrl);
+    }
+
+    navigate(`/quick-checkout?${qs.toString()}`);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isZoomed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPosition({ x, y });
+  };
+
+  if (loading) {
+    return <LoadingStore text="Loading product details" />;
+  }
+
+  if (!product) return null;
+
+  const productImageUrl = product.images?.[0]?.urls?.large || product.images?.[0]?.urls?.medium || product.images?.[0]?.url;
+  const productUrl = `https://vybebd.store/products/${product._id}`;
+  const productDesc = `Buy ${product.name} poster in Bangladesh. ${(product.description || '').slice(0, 130)}. Fast delivery, secure checkout at vybebd.store`;
+
+  const currentStdVariant = product.sizes.find(
+    (s) => s.name === selectedSize && (s.tier || 'Standard') === 'Standard'
+  );
+  const currentPremVariant = product.sizes.find(
+    (s) => s.name === selectedSize && s.tier === 'Premium'
+  );
+  const currentVariant = selectedTier === 'Premium'
+    ? currentPremVariant || (currentStdVariant ? {
+        ...currentStdVariant,
+        price: currentStdVariant.price + (({ A5: 100, A4: 150, A3: 200 })[selectedSize] || 100),
+      } : null)
+    : currentStdVariant;
+  const currentPrice = currentVariant?.price || product.basePrice;
+  const currentOriginalPrice =
+    currentVariant?.originalPrice || product.originalPrice || Math.round(currentPrice / 0.75);
+
+  const uniqueAvailableSizes = Array.from(new Set(product.sizes.map((s) => s.name)));
+  const premiumMarkup = { A5: 100, A4: 150, A3: 200 };
+
+  return (
+    <div className="pt-24 pb-12 md:pb-12 pb-32 min-h-screen">
+      <Helmet>
+        <title>{product.name} | Buy Poster Online Bangladesh | VYBE</title>
+        <meta name="description" content={productDesc} />
+        <meta name="keywords" content={`${product.name}, ${product.category} poster, wall art bangladesh, poster bd, buy poster online${product.tags?.length ? ', ' + product.tags.join(', ') : ''}`} />
+        <link rel="canonical" href={productUrl} />
+
+        {/* Open Graph — product image shows when shared on WhatsApp/Facebook */}
+        <meta property="og:type" content="product" />
+        <meta property="og:url" content={productUrl} />
+        <meta property="og:title" content={`${product.name} | VYBE`} />
+        <meta property="og:description" content={(product.description || '').slice(0, 200)} />
+        {productImageUrl && <meta property="og:image" content={productImageUrl} />}
+        <meta property="og:site_name" content="VYBE" />
+        <meta property="product:price:amount" content={String(product.basePrice)} />
+        <meta property="product:price:currency" content="BDT" />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${product.name} | VYBE`} />
+        <meta name="twitter:description" content={(product.description || '').slice(0, 200)} />
+        {productImageUrl && <meta name="twitter:image" content={productImageUrl} />}
+
+        {/* JSON-LD Product Schema — Google rich snippets: stars + price in search results */}
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: product.name,
+          description: product.description,
+          image: product.images?.map(img => img.urls?.large || img.urls?.medium || img.url).filter(Boolean),
+          sku: product._id,
+          brand: { '@type': 'Brand', name: 'VYBE' },
+          offers: {
+            '@type': 'Offer',
+            url: productUrl,
+            priceCurrency: 'BDT',
+            price: product.basePrice,
+            priceValidUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            availability: (product.stock || 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            seller: { '@type': 'Organization', name: 'VYBE' },
+          },
+          ...(product.rating?.count > 0 ? {
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: product.rating.average,
+              reviewCount: product.rating.count,
+              bestRating: 5,
+              worstRating: 1,
+            },
+          } : {}),
+        })}</script>
+
+        {/* BreadcrumbList Schema */}
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://vybebd.store' },
+            { '@type': 'ListItem', position: 2, name: product.category || 'Posters', item: `https://vybebd.store/products${product.category ? `?category=${product.category}` : ''}` },
+            { '@type': 'ListItem', position: 3, name: product.name, item: productUrl },
+          ],
+        })}</script>
+      </Helmet>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid md:grid-cols-2 gap-12">
+          {/* Images */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="relative card overflow-hidden mb-4 group cursor-pointer"
+              onClick={() => setIsZoomed(true)}
+              onMouseMove={handleMouseMove}
+            >
+              <img
+                src={product.images[selectedImage]?.urls?.large || product.images[selectedImage]?.url}
+                alt={product.name}
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+                className="w-full h-auto object-contain max-h-[600px]"
+                style={{ 
+                  aspectRatio: 'auto',
+                  width: '100%',
+                  height: 'auto'
+                }}
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
+                  <FiZoomIn className="w-5 h-5" />
+                  <span className="text-sm font-medium">Click to zoom</span>
+                </div>
+              </div>
+            </motion.div>
+            {product.images.length > 1 && (
+              <div className="grid grid-cols-4 gap-4">
+                {product.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImage(idx)}
+                    className={`card overflow-hidden transition-all ${
+                      selectedImage === idx ? 'ring-2 ring-vybe-purple' : ''
+                    }`}
+                  >
+                    <img src={img.urls?.thumbnail || img.url} alt="" loading="lazy" className="w-full h-20 object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Details */}
+          <div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="inline-block mb-4 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full shadow-lg"
+            >
+              🎉 25% OFF - Limited Time!
+            </motion.div>
+            <h1 className="text-4xl font-bold mb-4">{product.name}</h1>
+            <div className="flex items-center mb-4">
+              <div className="flex items-center text-yellow-400">
+                {[...Array(5)].map((_, i) => (
+                  <FiStar
+                    key={i}
+                    className={`w-5 h-5 ${
+                      i < Math.floor(product.rating?.average || 0) ? 'fill-current' : ''
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="ml-2 text-gray-600">
+                {(product.rating?.average || 0).toFixed(1)} ({product.rating?.count || 0} reviews)
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-4 mb-6">
+              {selectedSize ? (
+                <>
+                  <p className="text-4xl font-bold text-vybe-purple">৳{currentPrice}</p>
+                  <div className="flex flex-col">
+                    <span className="text-2xl text-gray-400 line-through">৳{currentOriginalPrice}</span>
+                    <span className="text-sm font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                      25% OFF
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <p className="text-3xl font-bold text-gray-400">৳{product.basePrice}+</p>
+                  <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    Starting price
+                  </span>
+                </div>
+              )}
+            </div>
+            <p className="text-gray-600 mb-6 leading-relaxed">{product.description}</p>
+
+            {/* Tier Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold mb-3">Quality:</label>
+              <div className="relative flex rounded-xl bg-gray-100 p-1 gap-1">
+                {['Standard', 'Premium'].map((tier) => (
+                  <motion.button
+                    key={tier}
+                    onClick={() => { setSelectedTier(tier); setSelectedSize(''); }}
+                    whileTap={{ scale: 0.95, transition: { type: 'spring', stiffness: 400, damping: 20 } }}
+                    className="relative flex-1 py-2.5 rounded-lg font-bold text-sm z-10"
+                  >
+                    {selectedTier === tier && (
+                      <motion.span
+                        layoutId="tierHighlight"
+                        className="absolute inset-0 rounded-lg bg-white shadow-md"
+                        transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                      />
+                    )}
+                    <span className={`relative z-10 transition-colors duration-200 ${
+                      selectedTier === tier ? 'text-vybe-purple' : 'text-gray-500'
+                    }`}>
+                      {tier}
+                    </span>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {/* Size Selection */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-semibold">Select Size: <span className="text-red-500">*</span></label>
+                {!selectedSize && (
+                  <motion.span 
+                    className="text-xs text-vybe-purple font-semibold flex items-center gap-1"
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <span className="w-2 h-2 bg-vybe-purple rounded-full animate-pulse-gpu"></span>
+                    Please choose a size
+                  </motion.span>
+                )}
+              </div>
+              <div className={`flex flex-wrap gap-3 p-4 rounded-lg border-2 transition-all ${
+                !selectedSize 
+                  ? 'border-vybe-purple/30 bg-vybe-purple/5 shadow-lg shadow-vybe-purple/10' 
+                  : 'border-transparent bg-transparent'
+              }`}>
+                {uniqueAvailableSizes.map((sizeName, sizeIdx) => {
+                  const standardVariant = product.sizes.find(
+                    (s) => s.name === sizeName && (s.tier || 'Standard') === 'Standard'
+                  );
+                  const premiumVariantFromDB = product.sizes.find(
+                    (s) => s.name === sizeName && s.tier === 'Premium'
+                  );
+                  const sizeVariant = selectedTier === 'Premium'
+                    ? premiumVariantFromDB || (standardVariant ? {
+                        ...standardVariant,
+                        price: standardVariant.price + (premiumMarkup[sizeName] || 100),
+                        originalPrice: Math.round((standardVariant.price + (premiumMarkup[sizeName] || 100)) / 0.75)
+                      } : null)
+                    : standardVariant;
+                  if (!sizeVariant) return null;
+                  const flameDelay = sizeIdx * 0.3;
+                  const isPremium = selectedTier === 'Premium';
+                  const isSelected = selectedSize === sizeName;
+
+                  return (
+                  <motion.button
+                    key={`${selectedTier}-${sizeName}`}
+                    onClick={() => setSelectedSize(sizeName)}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92, transition: { type: 'spring', stiffness: 500, damping: 18 } }}
+                    animate={isPremium && !isSelected ? {
+                      borderColor: ['rgb(253,186,116)', 'rgb(249,115,22)', 'rgb(239,68,68)', 'rgb(249,115,22)', 'rgb(253,186,116)'],
+                      boxShadow: ['0 0 4px rgba(249,115,22,0.2)', '0 0 18px rgba(249,115,22,0.55)', '0 0 4px rgba(249,115,22,0.2)']
+                    } : {}}
+                    transition={{ duration: 1.8, repeat: isPremium ? Infinity : 0, ease: 'easeInOut', delay: flameDelay }}
+                    className={`relative px-6 py-3 rounded-full border-2 transition-all ${
+                      isSelected
+                        ? isPremium
+                          ? 'border-orange-400 bg-gradient-to-br from-orange-500 to-red-600 text-white shadow-lg shadow-orange-400/40'
+                          : 'border-vybe-purple bg-vybe-purple text-white shadow-lg'
+                        : isPremium
+                          ? 'border-orange-300 hover:shadow-md'
+                          : 'border-gray-300 hover:border-vybe-purple hover:shadow-md'
+                    }`}
+                  >
+                    {isPremium && (
+                      <motion.span
+                        className="absolute -top-3 -right-1 text-base leading-none pointer-events-none"
+                        animate={{ y: [0, -4, 0], scale: [1, 1.3, 1], rotate: [-8, 8, -8] }}
+                        transition={{ duration: 1.0, repeat: Infinity, ease: 'easeInOut', delay: flameDelay }}
+                      >
+                        🔥
+                      </motion.span>
+                    )}
+                    <div className="flex flex-col items-start">
+                      <span className="font-semibold">{sizeVariant.name}</span>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className={isSelected ? 'text-white font-bold' : isPremium ? 'text-orange-500 font-bold' : 'text-vybe-purple font-bold'}>
+                          ৳{sizeVariant.price}
+                        </span>
+                        <span className="text-xs line-through opacity-60">
+                          ৳{sizeVariant.originalPrice || Math.round(sizeVariant.price / 0.75)}
+                        </span>
+                      </div>
+                    </div>
+                  </motion.button>
+                  );
+                })}              </div>
+              {!selectedSize && (
+                <motion.p 
+                  className="text-xs text-gray-500 mt-2 flex items-center gap-1"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <span>💡</span>
+                  Tip: Select your preferred poster size to see the price
+                </motion.p>
+              )}
+            </div>
+
+            {/* Frame Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold mb-3">
+                Choose Frame: <span className="text-xs text-gray-500">(Optional)</span>
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { value: 'black', label: 'Black', color: 'bg-black', textColor: 'text-white', ring: 'ring-gray-800' },
+                  { value: 'white', label: 'White', color: 'bg-white border-2 border-gray-300', textColor: 'text-gray-900', ring: 'ring-gray-300' },
+                  { value: 'woody', label: 'Woody', color: 'bg-gradient-to-br from-amber-700 to-amber-900', textColor: 'text-white', ring: 'ring-amber-700' }
+                ].map((frame) => (
+                  <motion.button
+                    key={frame.value}
+                    onClick={() => setSelectedFrame(frame.value)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`relative p-4 rounded-xl transition-all ${frame.color} ${
+                      selectedFrame === frame.value
+                        ? `ring-4 ${frame.ring || 'ring-vybe-purple'} shadow-lg`
+                        : 'hover:shadow-md'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div className={`w-12 h-12 rounded-lg ${frame.color} flex items-center justify-center`}>
+                        {selectedFrame === frame.value && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
+                          >
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </motion.div>
+                        )}
+                      </div>
+                      <span className={`text-sm font-semibold ${frame.textColor}`}>
+                        {frame.label}
+                      </span>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {selectedFrame ? `✓ ${selectedFrame.charAt(0).toUpperCase() + selectedFrame.slice(1)} frame selected` : 'Poster only (no frame)'}
+              </p>
+            </div>
+
+            {/* Quantity */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold mb-2">Quantity:</label>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  disabled={quantity <= 1}
+                  className={`w-12 h-12 rounded-lg border-2 font-bold text-xl transition-all flex items-center justify-center ${
+                    quantity <= 1
+                      ? 'border-gray-200 text-gray-300 cursor-not-allowed'
+                      : 'border-vybe-purple text-vybe-purple hover:bg-vybe-purple hover:text-white active:scale-95'
+                  }`}
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1;
+                    setQuantity(Math.max(1, val));
+                  }}
+                  className="w-20 h-12 text-center text-xl font-semibold border-2 border-gray-300 rounded-lg focus:border-vybe-purple focus:outline-none"
+                />
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-12 h-12 rounded-lg border-2 border-vybe-purple text-vybe-purple hover:bg-vybe-purple hover:text-white font-bold text-xl transition-all flex items-center justify-center active:scale-95"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="space-y-3">
+              {/* Customize Button - Coming Soon */}
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 cursor-not-allowed opacity-60 ${
+                  darkMode
+                    ? 'bg-moon-midnight border-2 border-moon-silver/30 text-moon-silver'
+                    : 'bg-gray-100 border-2 border-gray-300 text-gray-500'
+                }`}
+              >
+                <FiImage className="text-xl" />
+                <span>Customize This Poster</span>
+                <span className={`text-sm font-normal ${darkMode ? 'text-moon-gold' : 'text-purple-600'}`}>
+                  (Coming Soon...)
+                </span>
+              </motion.div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 w-full">
+                {/* Add to Cart Button */}
+                <button 
+                  onClick={() => {
+                    setIsAdded(true);
+                    handleAddToCart();
+                    setTimeout(() => {
+                      setIsAdded(false);
+                    }, 2500);
+                  }}
+                  disabled={!selectedSize}
+                  className={`btn-cart flex-1 ${!selectedSize ? 'opacity-50 cursor-not-allowed' : ''} ${isAdded ? 'active' : ''}`}
+                >
+                  <span>
+                    <span className="flex items-center justify-center gap-2">
+                      <FiShoppingCart />
+                      {!selectedSize ? 'Select Size' : 'Add to Cart'}
+                    </span>
+                  </span>
+                </button>
+
+                {/* Buy Now Button */}
+                <motion.button
+                  onClick={handleBuyNow}
+                  disabled={!selectedSize}
+                  whileHover={selectedSize ? { scale: 1.02 } : {}}
+                  whileTap={selectedSize ? { scale: 0.98 } : {}}
+                  className={`flex-1 px-6 py-4 rounded-lg font-bold text-white transition-all ${
+                    !selectedSize
+                      ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                      : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl'
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    {!selectedSize ? 'Select Size' : 'Buy Now'}
+                  </span>
+                </motion.button>
+              </div>
+            </div>
+            
+            {/* Trust Banner - Critical for BD market conversion */}
+            <TrustBanner darkMode={darkMode} />
+            
+            {!selectedSize && (
+              <motion.div 
+                className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                ⚠️ Please select a size above to add this product to your cart
+              </motion.div>
+            )}
+
+            {product.customizable && (
+              <div className={`mt-6 p-4 rounded-lg ${darkMode ? 'bg-moon-midnight/50 border border-moon-gold/30' : 'bg-yellow-50 border border-yellow-200'}`}>
+                <p className={`text-sm ${darkMode ? 'text-moon-gold' : 'text-yellow-800'}`}>
+                  🎨 Customization feature coming soon! You'll be able to upload your own images and create personalized posters.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      {/* Zoom Modal */}
+      <AnimatePresence>
+        {isZoomed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
+            onClick={() => setIsZoomed(false)}
+          >
+            <button
+              onClick={() => setIsZoomed(false)}
+              className="absolute top-4 right-4 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white p-3 rounded-full transition-all"
+            >
+              <FiX className="w-6 h-6" />
+            </button>
+            
+            <div className="absolute top-4 left-4 z-50 bg-white/10 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm">
+              {selectedImage + 1} / {product.images.length}
+            </div>
+
+            {/* Navigation arrows */}
+            {product.images.length > 1 && (
+              <>
+                {selectedImage > 0 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImage(selectedImage - 1);
+                    }}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white p-4 rounded-full transition-all z-50"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                )}
+                {selectedImage < product.images.length - 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImage(selectedImage + 1);
+                    }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white p-4 rounded-full transition-all z-50"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                )}
+              </>
+            )}
+
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={product.images[selectedImage]?.urls?.full || product.images[selectedImage]?.url}
+                alt={product.name}
+                decoding="async"
+                className="max-w-full max-h-full object-contain rounded-lg"
+                style={{
+                  width: 'auto',
+                  height: 'auto',
+                  maxWidth: '100%',
+                  maxHeight: '90vh'
+                }}
+              />
+            </motion.div>
+
+            {/* Thumbnail navigation */}
+            {product.images.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/50 backdrop-blur-sm p-2 rounded-full">
+                {product.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImage(idx);
+                    }}
+                    className={`w-16 h-16 rounded-lg overflow-hidden transition-all ${
+                      selectedImage === idx 
+                        ? 'ring-2 ring-white scale-110' 
+                        : 'opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img.urls?.thumbnail || img.url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 backdrop-blur-sm px-4 py-2 rounded-full">
+              Scroll to zoom • Click outside to close
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+    </div>
+  );
+}
