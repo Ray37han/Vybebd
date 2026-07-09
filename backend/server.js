@@ -141,10 +141,34 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" } // Allow cross-origin resources
 }));
 
-app.use(cors({
-  origin: ['https://client-cyan-alpha-35.vercel.app', 'https://vybebd.store'],
-  credentials: true
-}));
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (Postman, mobile apps)
+    if (!origin) return callback(null, true);
+    // Allow all Vercel deployments (including preview URLs)
+    if (origin.includes('.vercel.app')) return callback(null, true);
+    // Allow production domains
+    if (origin.includes('vybebd.store')) return callback(null, true);
+    // Allow localhost for development
+    if (origin.match(/^https?:\/\/localhost:\d+$/)) return callback(null, true);
+    if (origin.match(/^https?:\/\/127\.0\.0\.1:\d+$/)) return callback(null, true);
+    // Allow local network for mobile testing
+    if (origin.match(/^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/)) return callback(null, true);
+    console.log(`⚠️  Blocked CORS origin: ${origin}`);
+    callback(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Set-Cookie', 'Authorization', 'X-Total-Count'],
+  maxAge: 86400,
+  optionsSuccessStatus: 204
+};
+
+app.use(cors(corsOptions));
+
+// CRITICAL: Handle preflight OPTIONS requests
+app.options('*', cors(corsOptions));
 
 // Apply general rate limiting to all routes
 // Socket.IO — mounted on same HTTP server, separate path to avoid CORS conflicts
