@@ -61,78 +61,7 @@ const azureHost = process.env.WEBSITE_HOSTNAME
   ? `https://${process.env.WEBSITE_HOSTNAME}`
   : null;
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:5173',
-  'https://vybe-nu.vercel.app',
-  'https://vybebd.store',
-  'https://www.vybebd.store',
-  process.env.CLIENT_URL,
-  azureHost
-].filter(Boolean);
 
-// Function to check if origin is allowed - Enhanced for multi-device access
-const isOriginAllowed = (origin) => {
-  if (!origin) return true; // Allow requests with no origin (e.g., Postman, mobile apps, native apps)
-  
-  // Allow Vercel deployments (including preview deployments)
-  if (origin.includes('.vercel.app') || origin.includes('vercel.app')) return true;
-  
-  // Allow Railway deployments
-  if (origin.includes('.railway.app') || origin.includes('railway.app')) return true;
-  
-  // Allow localhost with any port (for development)
-  if (origin.match(/^https?:\/\/localhost:\d+$/)) return true;
-  
-  // Allow 127.0.0.1 with any port
-  if (origin.match(/^https?:\/\/127\.0\.0\.1:\d+$/)) return true;
-  
-  // Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x) - for mobile devices on same network
-  if (origin.match(/^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+)(:\d+)?$/)) return true;
-  
-  // Allow ngrok tunnels (for remote testing)
-  if (origin.includes('ngrok.io') || origin.includes('ngrok-free.app')) return true;
-  
-  // Allow production domain if set
-  if (process.env.PRODUCTION_DOMAIN && origin.includes(process.env.PRODUCTION_DOMAIN)) return true;
-  
-  // Check against allowed origins
-  return allowedOrigins.includes(origin);
-};
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (isOriginAllowed(origin)) {
-      callback(null, true);
-    } else {
-      console.log(`⚠️  Blocked origin: ${origin}`);
-      callback(null, true); // Allow all for now during debugging - consider tightening in production
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'Cookie',
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'User-Agent',
-    'DNT',
-    'Cache-Control',
-    'X-Mx-ReqToken',
-    'Keep-Alive',
-    'If-Modified-Since',
-    'X-Device-Type', // Custom header for device detection
-    'X-App-Version' // Custom header for app version tracking
-  ],
-  exposedHeaders: ['Set-Cookie', 'Authorization', 'X-Total-Count', 'X-Upload-Progress'],
-  maxAge: 86400, // 24 hours
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-};
 
 // Security middleware - Helmet for HTTP headers protection
 app.use(helmet({
