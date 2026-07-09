@@ -142,7 +142,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: ['https://your-frontend.vercel.app', 'https://vybebd.store'],
+  origin: ['https://client-cyan-alpha-35.vercel.app', 'https://vybebd.store'],
   credentials: true
 }));
 
