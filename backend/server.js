@@ -141,10 +141,10 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" } // Allow cross-origin resources
 }));
 
-app.use(cors(corsOptions));
-
-// Handle preflight requests with the SAME config (important for credentials)
-app.options('*', cors(corsOptions));
+app.use(cors({
+  origin: ['https://your-frontend.vercel.app', 'https://vybebd.store'],
+  credentials: true
+}));
 
 // Apply general rate limiting to all routes
 // Socket.IO — mounted on same HTTP server, separate path to avoid CORS conflicts
