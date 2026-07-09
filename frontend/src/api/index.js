@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://api.vybebd.store/api';
+// In production, force the new DigitalOcean API URL to bypass any stale Vercel dashboard environment variables
+const API_URL = import.meta.env.PROD 
+  ? 'https://api.vybebd.store/api'
+  : (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5001/api');
 
 const api = axios.create({
   baseURL: API_URL,
