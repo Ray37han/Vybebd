@@ -40,7 +40,7 @@ const BD_PHONE_RE = /^01[3-9]\d{8}$/;
 
 /* ─── Helper: get API base URL ───────────────────────────────────────────── */
 const API_BASE =
-  import.meta.env.VITE_API_URL ||
+  (import.meta.env.VITE_API_URL || '').trim() ||
   (window.location.hostname === 'localhost'
     ? 'http://localhost:5001/api'
     : '/api');
