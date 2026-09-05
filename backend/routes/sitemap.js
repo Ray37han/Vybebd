@@ -13,6 +13,9 @@ const CATEGORIES = [
   'bikes', 'music', 'tv-series', 'movies', 'games',
   'motivational', 'abstract', 'minimalist', 'nature',
   'typography', 'vintage', 'modern', 'best-selling',
+  // Home Decor & Wobbler
+  'home-decor', 'cushion-cover', 'wall-clock', 'photo-frame', 'canvas-print',
+  'solar-wobbler',
 ];
 
 function escapeXml(str) {
@@ -75,6 +78,18 @@ router.get('/sitemap', async (req, res) => {
     <lastmod>${today}</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/home-decor</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>${SITE_URL}/solar-wobbler</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
   </url>
 
   <!-- Category Pages -->

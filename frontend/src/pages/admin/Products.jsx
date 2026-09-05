@@ -11,8 +11,10 @@ export default function AdminProducts() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
+    productType: 'poster',
     name: '',
     description: '',
+    shortDescription: '',
     category: 'motivational',
     basePrice: 470,
     originalPrice: 625,
@@ -38,8 +40,8 @@ export default function AdminProducts() {
   const savedScrollYRef = useRef(0);
   const hasModalOpenedRef = useRef(false);
 
-  // 8 Main Mother Categories
-  const categories = [
+  // Poster categories (original set)
+  const posterCategories = [
     // 1. Football
     'football', 'football-motivational',
     // 2. Movies
@@ -56,11 +58,25 @@ export default function AdminProducts() {
     'music',
     // 8. Series
     'tv-series',
-    // Additional Categories
+    // Additional
     'motivational', 'best-selling', 'cricket', 'ufc', 'nba',
-    // Legacy categories
+    // Legacy
     'abstract', 'minimalist', 'nature', 'typography', 'custom', 'anime', 'vintage', 'modern', 'other'
   ];
+
+  // Home Decor categories
+  const homeDecorCategories = [
+    'solar-wobbler', 'wobbler', 'home-decor',
+    'cushion-cover', 'throw-pillow', 'wall-clock',
+    'photo-frame', 'canvas-print', 'table-decor',
+  ];
+
+  // Active category list is driven by productType
+  const categories = formData.productType === 'wobbler'
+    ? ['solar-wobbler', 'wobbler']
+    : formData.productType === 'home-decor'
+    ? homeDecorCategories
+    : posterCategories;
 
   const sizeOptions = [
     { name: 'A5', dimensions: '5.8 x 8.3 inches', price: 280, originalPrice: 375 },
@@ -225,8 +241,10 @@ export default function AdminProducts() {
 
   const resetForm = () => {
     setFormData({
+      productType: 'poster',
       name: '',
       description: '',
+      shortDescription: '',
       category: 'motivational',
       basePrice: '',
       sizes: [{ name: 'A4', dimensions: '8.3 x 11.7 inches', price: '' }],
@@ -282,8 +300,10 @@ export default function AdminProducts() {
       
       // Prepare product data object
       const productData = {
+        productType: formData.productType || 'poster',
         name: formData.name,
         description: formData.description,
+        shortDescription: formData.shortDescription || '',
         category: formData.category,
         basePrice: Number(formData.basePrice),
         stock: Number(formData.stock),
@@ -291,13 +311,16 @@ export default function AdminProducts() {
         featured: formData.featured,
         newArrival: formData.newArrival,
         bestSelling: formData.bestSelling,
-        customizable: formData.customizable,
+        customizable: formData.productType === 'poster' ? formData.customizable : false,
         isActive: formData.isActive,
-        sizes: formData.sizes.map(size => ({
-          name: size.name,
-          dimensions: size.dimensions,
-          price: Number(size.price)
-        }))
+        // Only include sizes for poster type
+        sizes: formData.productType === 'poster'
+          ? formData.sizes.map(size => ({
+              name: size.name,
+              dimensions: size.dimensions,
+              price: Number(size.price)
+            }))
+          : [],
       };
       
       // When editing, keep existing images if no new ones uploaded
@@ -369,11 +392,13 @@ export default function AdminProducts() {
   const handleEdit = (product) => {
     setEditingProduct(product);
     setFormData({
+      productType: product.productType || 'poster',
       name: product.name,
       description: product.description,
+      shortDescription: product.shortDescription || '',
       category: product.category,
       basePrice: product.basePrice,
-      sizes: product.sizes || [{ name: 'A4', dimensions: '8.3 x 11.7 inches', price: '' }],
+      sizes: product.sizes?.length > 0 ? product.sizes : [{ name: 'A4', dimensions: '8.3 x 11.7 inches', price: '' }],
       images: product.images || [],
       stock: product.stock,
       tags: product.tags?.join(', ') || '',
@@ -666,6 +691,50 @@ export default function AdminProducts() {
                 {/* Scrollable Form Content */}
                 <div className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-8 py-4 sm:py-6">
                   <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                    {/* ── Product Type Selector ─────────────────────────────── */}
+                    <div className="sm:col-span-2 mb-1">
+                      <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${darkMode ? 'text-moon-silver' : 'text-gray-900'}`}>
+                        Product Type *
+                      </label>
+                      <div className="flex gap-2 flex-wrap">
+                        {[
+                          { value: 'poster',     label: '🎨 Poster',      desc: 'Wall art with sizes' },
+                          { value: 'home-decor', label: '🏠 Home Decor',  desc: 'Decor without poster sizes' },
+                          { value: 'wobbler',    label: '☀️ Wobbler',     desc: 'Single-SKU kinetic art' },
+                        ].map(({ value, label, desc }) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => setFormData(prev => ({
+                              ...prev,
+                              productType: value,
+                              // Reset category when switching type
+                              category: value === 'poster' ? 'motivational'
+                                : value === 'wobbler' ? 'solar-wobbler'
+                                : 'home-decor',
+                              // Reset sizes for non-poster types
+                              sizes: value === 'poster'
+                                ? [{ name: 'A4', dimensions: '8.3 x 11.7 inches', price: 470, originalPrice: 625, tier: 'Standard' }]
+                                : [],
+                              customizable: value === 'poster',
+                            }))}
+                            className={`flex flex-col items-start px-4 py-2.5 rounded-xl border-2 text-left transition-all flex-1 min-w-[120px] ${
+                              formData.productType === value
+                                ? darkMode
+                                  ? 'border-moon-gold bg-moon-gold/10 text-moon-gold'
+                                  : 'border-purple-600 bg-purple-50 text-purple-700'
+                                : darkMode
+                                ? 'border-moon-gold/20 text-moon-silver hover:border-moon-gold/50'
+                                : 'border-gray-200 text-gray-700 hover:border-purple-300'
+                            }`}
+                          >
+                            <span className="font-semibold text-sm">{label}</span>
+                            <span className="text-xs opacity-60 mt-0.5">{desc}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Basic Info */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div className="sm:col-span-2">
@@ -729,6 +798,7 @@ export default function AdminProducts() {
                       </div>
                     </div>
 
+                    {/* Description */}
                     <div>
                       <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${darkMode ? 'text-moon-silver' : 'text-gray-900'}`}>
                         Description *
@@ -747,6 +817,28 @@ export default function AdminProducts() {
                         required
                       />
                     </div>
+
+                    {/* Short Description — Home Decor / Wobbler only */}
+                    {formData.productType !== 'poster' && (
+                      <div>
+                        <label className={`block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${darkMode ? 'text-moon-silver' : 'text-gray-900'}`}>
+                          Short Description <span className="opacity-60 font-normal">(one-liner for cards &amp; SEO, max 300 chars)</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="shortDescription"
+                          value={formData.shortDescription}
+                          onChange={handleInputChange}
+                          maxLength={300}
+                          placeholder="e.g. Solar-powered kinetic desk art — no batteries needed."
+                          className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border rounded-lg focus:ring-2 focus:border-transparent transition-all ${
+                            darkMode 
+                              ? 'bg-moon-night/50 border-moon-gold/30 text-moon-silver placeholder-moon-silver/40 focus:ring-moon-gold' 
+                              : 'bg-white border-gray-300 text-gray-900 focus:ring-purple-600'
+                          }`}
+                        />
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                       <div>
@@ -786,11 +878,11 @@ export default function AdminProducts() {
                         />
                       </div>
                     </div>
-
-                    {/* Sizes */}
+                    {/* Sizes — Poster only */}
+                    {formData.productType === 'poster' && (
                     <div>
                       <div className="flex justify-between items-center mb-2 sm:mb-3">
-                        <label className={`block text-xs sm:text-sm font-medium ${darkMode ? 'text-moon-silver' : 'text-gray-900'}`}>Sizes & Pricing</label>
+                        <label className={`block text-xs sm:text-sm font-medium ${darkMode ? 'text-moon-silver' : 'text-gray-900'}`}>Sizes &amp; Pricing</label>
                         <button
                           type="button"
                           onClick={addSize}
@@ -869,6 +961,7 @@ export default function AdminProducts() {
                         ))}
                       </div>
                     </div>
+                    )}
 
                     {/* Images */}
                     <div>

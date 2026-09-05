@@ -24,6 +24,7 @@ export default function StickyAddToCart({
   currentPrice,
   onAddToCart,
   disabled,
+  needsSize = true,  // false for single-SKU products like Solar Wobbler
   darkMode = false,
   targetRef, // The element to observe (when it's out of view, show sticky bar)
 }) {
@@ -108,11 +109,17 @@ export default function StickyAddToCart({
                       {selectedSize}
                     </span>
                   </>
-                ) : (
+                ) : needsSize ? (
                   <span className={`text-sm ${
                     darkMode ? 'text-moon-gold animate-pulse' : 'text-purple-600 animate-pulse'
                   }`}>
                     ⚠️ Select size above
+                  </span>
+                ) : (
+                  <span className={`text-lg font-bold ${
+                    darkMode ? 'text-moon-gold' : 'text-purple-600'
+                  }`}>
+                    ৳{currentPrice}
                   </span>
                 )}
               </div>
@@ -133,7 +140,7 @@ export default function StickyAddToCart({
               style={{ minHeight: '48px' }} // Explicit 48px for touch target
             >
               <FiShoppingCart className="w-4 h-4" />
-              <span>{disabled ? 'Select Size' : 'Add'}</span>
+              <span>{disabled ? (needsSize ? 'Select Size' : 'Add') : 'Add'}</span>
             </motion.button>
           </div>
         </motion.div>

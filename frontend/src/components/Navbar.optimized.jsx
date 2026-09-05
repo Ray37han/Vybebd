@@ -8,7 +8,7 @@ import { CartButton, MenuButton } from '../components/AnimatedIcon';
 import { usePageLoad } from '../hooks/usePageLoad';
 import toast from 'react-hot-toast';
 
-// Main 10 categories matching the landing page
+// Main 10 poster categories + new product lines
 const categories = [
   { value: 'football', label: 'Football', icon: '⚽' },
   { value: 'cars', label: 'Cars', icon: '🚗' },
@@ -20,6 +20,11 @@ const categories = [
   { value: 'games', label: 'Games', icon: '🎮' },
   { value: 'anime', label: 'Anime', icon: '⚡' },
   { value: 'motivational', label: 'Motivational', icon: '💪' },
+  // ── divider ──
+  { divider: true },
+  // ── New product lines ──
+  { value: 'home-decor', label: 'Home Decor', icon: '🏠', link: '/home-decor' },
+  { value: 'solar-wobbler', label: 'Solar Wobbler', icon: '☀️', link: '/solar-wobbler' },
 ];
 
 export default function NavbarOptimized() {
@@ -368,11 +373,22 @@ export default function NavbarOptimized() {
                       </div>
                       
                       <div className="py-2">
-                        {categories.map((category) => (
+                        {categories.map((category, idx) => {
+                          // Render divider
+                          if (category.divider) {
+                            return (
+                              <div key={`divider-${idx}`} className={`mx-4 my-1 border-t ${darkMode ? 'border-moon-gold/20' : 'border-purple-100'}`} />
+                            );
+                          }
+                          // Use custom link if provided (for new product lines), else filter query
+                          const destination = category.link
+                            ? category.link
+                            : `/products?category=${category.value}`;
+                          return (
                           <button
                             key={category.value}
                             onClick={() => {
-                              navigate(`/products?category=${category.value}`);
+                              navigate(destination);
                               setProductsDropdownOpen(false);
                             }}
                             className={`w-full text-left px-6 py-3 text-sm font-medium transition-colors ${
@@ -384,7 +400,8 @@ export default function NavbarOptimized() {
                             <span className="mr-3 text-base">{category.icon}</span>
                             {category.label}
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     </motion.div>
                   )}
@@ -413,7 +430,7 @@ export default function NavbarOptimized() {
                     }
                   }}
                   onFocus={() => searchQuery.length >= 2 && searchSuggestions.length > 0 && setShowSearchSuggestions(true)}
-                  placeholder="Search posters..."
+                  placeholder="Search VYBE..."
                   className={`w-40 lg:w-52 pl-9 pr-8 py-2 text-sm rounded-xl border transition-all duration-300 focus:outline-none focus:ring-2 ${
                     darkMode
                       ? 'bg-moon-midnight/50 border-moon-gold/20 text-moon-silver placeholder-moon-silver/40 focus:border-moon-gold focus:ring-moon-gold/20'
@@ -697,7 +714,7 @@ export default function NavbarOptimized() {
                       if (e.key === 'Enter') handleSearchSubmit();
                     }}
                     onFocus={() => searchQuery.length >= 2 && searchSuggestions.length > 0 && setShowSearchSuggestions(true)}
-                    placeholder="Search posters by name, type..."
+                    placeholder="Search by name, category..."
                     className={`w-full pl-9 pr-9 py-3 min-h-[48px] text-sm rounded-xl border transition-all focus:outline-none focus:ring-2 ${
                       darkMode
                         ? 'bg-moon-night/50 border-moon-gold/20 text-moon-silver placeholder-moon-silver/40 focus:border-moon-gold focus:ring-moon-gold/20'

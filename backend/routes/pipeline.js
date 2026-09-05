@@ -34,14 +34,16 @@ function buildProductsFromPayload(body = {}) {
   if (Array.isArray(body.products) && body.products.length > 0) {
     return body.products
       .map((item) => ({
-        name: String(item?.name || '').trim(),
-        productId: String(item?.productId || '').trim(),
-        quantity: Number(item?.quantity) > 0 ? Number(item.quantity) : 1,
-        price: Number(item?.price) >= 0 ? Number(item.price) : 0,
-        image_url: String(item?.image_url || '').trim(),
-        size: String(item?.size || '').trim(),
-        frame: String(item?.frame || '').trim(),
-        frameColor: String(item?.frameColor || '').trim(),
+        name:        String(item?.name || '').trim(),
+        productId:   String(item?.productId || '').trim(),
+        productType: String(item?.productType || '').trim(),   // 'poster' | 'home-decor' | 'wobbler'
+        quantity:    Number(item?.quantity) > 0 ? Number(item.quantity) : 1,
+        price:       Number(item?.price) >= 0 ? Number(item.price) : 0,
+        image_url:   String(item?.image_url || '').trim(),
+        size:        String(item?.size || '').trim(),
+        tier:        String(item?.tier || '').trim(),          // Standard | Premium
+        frame:       String(item?.frame || '').trim(),
+        frameColor:  String(item?.frameColor || '').trim(),
       }))
       .filter((item) => item.name);
   }
@@ -52,10 +54,10 @@ function buildProductsFromPayload(body = {}) {
   }
 
   return [{
-    name: fallbackName,
+    name:      fallbackName,
     productId: String(body.productId || '').trim(),
-    quantity: Number(body.quantity) > 0 ? Number(body.quantity) : 1,
-    price: Number(body.price) >= 0 ? Number(body.price) : 0,
+    quantity:  Number(body.quantity) > 0 ? Number(body.quantity) : 1,
+    price:     Number(body.price) >= 0 ? Number(body.price) : 0,
     image_url: String(body.productImageUrl || body.image_url || '').trim(),
   }];
 }

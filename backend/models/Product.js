@@ -10,16 +10,53 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Description is required']
   },
+  // ── Short description — one-liner used in Home Decor cards and SEO ──────────
+  // Optional; existing poster products are unaffected.
+  shortDescription: {
+    type: String,
+    default: '',
+    trim: true,
+    maxlength: 300,
+  },
+  // ── URL slug — SEO-friendly identifier (e.g. "solar-wobbler-cat") ──────────
+  // Optional; not used in routing yet but stored for future /products/:slug
+  slug: {
+    type: String,
+    default: '',
+    trim: true,
+    lowercase: true,
+    index: true,
+  },
   category: {
     type: String,
     required: true,
     enum: [
+      // ── Poster Categories (original — DO NOT REMOVE) ──────────────────────
       'bikes', 'sports-cars', 'vintage-cars', 'muscle-cars', 'vector-cars',
       'football', 'football-motivational', 'cricket', 'ufc', 'nba', 'f1', 'f1-motivational',
       'marvel', 'dc', 'movies', 'tv-series', 'music', 'games',
       'motivational', 'best-selling', 'sports', 'cars',
-      'abstract', 'minimalist', 'nature', 'typography', 'custom', 'anime', 'vintage', 'modern', 'other'
+      'abstract', 'minimalist', 'nature', 'typography', 'custom', 'anime', 'vintage', 'modern', 'other',
+      // ── Home Decor Categories (new) ───────────────────────────────────────
+      'home-decor',
+      'cushion-cover',
+      'throw-pillow',
+      'wall-clock',
+      'photo-frame',
+      'canvas-print',
+      'table-decor',
+      // ── Solar Wobbler Categories (new) ────────────────────────────────────
+      'solar-wobbler',
+      'wobbler',
     ]
+  },
+  // ── Product Type — drives UI rendering in ProductDetail ───────────────────
+  // Default: 'poster' → all existing products are unaffected (no migration needed)
+  productType: {
+    type: String,
+    enum: ['poster', 'home-decor', 'wobbler'],
+    default: 'poster',
+    index: true,
   },
   images: [{
     url: String, // Optional - for backward compatibility
@@ -37,7 +74,18 @@ const productSchema = new mongoose.Schema({
     name: {
       type: String,
       required: true,
-      enum: ['A5', 'A4', 'A3', 'A2', 'A1', '12x18', '16x20', '18x24', '24x36']
+      enum: [
+        // ── Poster paper sizes (original — DO NOT REMOVE) ─────────────────
+        'A5', 'A4', 'A3', 'A2', 'A1', '12x18', '16x20', '18x24', '24x36',
+        // ── Clothing / soft goods (Home Decor) ───────────────────────────
+        'S', 'M', 'L', 'XL',
+        // ── Square cushion / canvas sizes (Home Decor) ────────────────────
+        '10x10', '12x12', '16x16', '18x18', '20x20', '24x24',
+        // ── Clock face sizes (Home Decor) ─────────────────────────────────
+        '8-inch', '10-inch', '12-inch', '14-inch',
+        // ── Generic / single SKU (Wobbler) ────────────────────────────────
+        'Standard', 'Single',
+      ]
     },
     tier: {
       type: String,
@@ -136,6 +184,49 @@ const productSchema = new mongoose.Schema({
   },
   tags: [String],
 
+  // ── Home Decor Content Fields ─────────────────────────────────────────────
+  // All optional — poster documents are unaffected (default to empty).
+
+  // Bullet-point feature list (e.g. 'Solar powered — no batteries ever')
+  features: {
+    type: [String],
+    default: [],
+  },
+
+  // Key-value specification pairs (e.g. [{label:'Material',value:'ABS Plastic'}])
+  specifications: {
+    type: [
+      {
+        label: { type: String, required: true, trim: true },
+        value: { type: String, required: true, trim: true },
+        _id: false,
+      },
+    ],
+    default: [],
+  },
+
+  // Accordion FAQ items (e.g. [{question:'Does it need batteries?',answer:'No.'}])
+  faq: {
+    type: [
+      {
+        question: { type: String, required: true, trim: true },
+        answer:   { type: String, required: true, trim: true },
+        _id: false,
+      },
+    ],
+    default: [],
+  },
+
+  // ── SEO Metadata override ─────────────────────────────────────────────────
+  // When set, these override the auto-generated SEO defaults in og.js
+  metadata: {
+    seoTitle:        { type: String, default: '', trim: true },
+    metaDescription: { type: String, default: '', trim: true },
+    seoKeywords:     { type: String, default: '', trim: true },
+    socialImage:     { type: String, default: '', trim: true }, // Cloudinary URL override
+    _id: false,
+  },
+
   // ── Normalized / Computed Fields (NON-DESTRUCTIVE) ─────────────────────────
   // These fields are derived from original data and power the smart search &
   // filtering system.  Original fields above are NEVER modified.
@@ -205,6 +296,10 @@ productSchema.index({ isActive: 1, normalizedCategory: 1, basePrice: 1 });
 productSchema.index({ isActive: 1, normalizedCategory: 1, createdAt: -1 });
 productSchema.index({ isActive: 1, normalizedCategory: 1, sold: -1 });
 productSchema.index({ isActive: 1, groupKey: 1 });
+
+// ── productType indexes (Home Decor / Wobbler expansion) ──────────────────
+productSchema.index({ isActive: 1, productType: 1, createdAt: -1 });
+productSchema.index({ isActive: 1, productType: 1, normalizedCategory: 1 });
 
 // Comprehensive text index — original + normalized fields (weighted)
 productSchema.index(

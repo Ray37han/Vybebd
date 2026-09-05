@@ -6,7 +6,9 @@ Allow: /
 Disallow: /admin/
 Disallow: /api/
 Disallow: /checkout
+Disallow: /quick-checkout
 Disallow: /order-success
+Disallow: /order-confirmed
 Disallow: /my-orders
 Disallow: /account
 

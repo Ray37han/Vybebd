@@ -12,6 +12,9 @@ import musicImg from './images/MUSIC.jpg';
 import gamesImg from './images/GAMES.jpg';
 import animeImg from './images/ANIME.jpg';
 import motivationalImg from './images/MOTIVATIONAL.jpg';
+// New product lines
+import homeDecorImg from './images/HOME_DECOR.jpg';
+import solarWobblerImg from './images/SOLAR_WOBBLER.jpg';
 
 /**
  * CollectionGrid Component - "Shop by Passion" Category Grid
@@ -115,6 +118,27 @@ const collections = [
     color: 'from-amber-500 to-orange-700',
     emoji: '💪',
   },
+  // ── New Product Lines ──────────────────────────────────────────────────
+  {
+    id: 'home-decor',
+    name: 'Home Decor',
+    tagline: 'Transform Your Living Space',
+    image: homeDecorImg,
+    categories: ['home-decor', 'cushion-cover', 'wall-clock', 'photo-frame', 'canvas-print'],
+    link: '/home-decor',              // dedicated landing page
+    color: 'from-amber-600 to-rose-700',
+    emoji: '🏠',
+  },
+  {
+    id: 'solar-wobbler',
+    name: 'Solar Wobbler',
+    tagline: 'Kinetic Art, Powered by Sun',
+    image: solarWobblerImg,
+    categories: ['solar-wobbler', 'wobbler'],
+    link: '/solar-wobbler',           // dedicated landing page
+    color: 'from-yellow-400 to-orange-600',
+    emoji: '☀️',
+  },
 ];
 
 export default function CollectionGrid({ darkMode = false }) {
@@ -144,8 +168,8 @@ export default function CollectionGrid({ darkMode = false }) {
           </p>
         </motion.div>
 
-        {/* Grid: 2 cols mobile, 4 cols desktop */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+        {/* Grid: 2 cols mobile, 4 cols tablet, 6 cols desktop (12 items = 2 clean rows) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6">
           {collections.map((collection, index) => (
             <motion.div
               key={collection.id}
@@ -155,7 +179,7 @@ export default function CollectionGrid({ darkMode = false }) {
               transition={{ delay: index * 0.05 }}
             >
               <Link
-                to={`/products?category=${collection.categories.join(',')}`}
+                to={collection.link || `/products?category=${collection.categories[0]}`}
                 className="group block relative overflow-hidden rounded-2xl aspect-[3/4] sm:aspect-square"
               >
                 {/* Background Image with Zoom Effect */}

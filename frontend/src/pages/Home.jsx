@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import AnnouncementBar from '../components/AnnouncementBar';
+import HomeDecorSpotlight from '../components/HomeDecorSpotlight';
 import HeroCarousel from '../components/HeroCarousel';
 import CollectionGrid from '../components/CollectionGrid';
 import FeaturedProducts from '../components/FeaturedProducts';
@@ -66,31 +67,31 @@ export default function Home() {
   return (
     <>
       <Helmet>
-        <title>vybebd.store - Premium Posters & Wall Art | Turn Your Walls Into Vibes</title>
+        <title>VYBE — Premium Posters, Wall Art & Home Decor Bangladesh | vybebd.store</title>
         <meta 
           name="description" 
-          content="Shop premium quality posters and wall art in Bangladesh. Music, movies, anime, sports & aesthetic posters. Fast delivery, secure checkout, best prices." 
+          content="Shop premium quality posters, wall art & home decor in Bangladesh. Music, movies, anime, sports, solar wobbler & aesthetic pieces. Fast delivery, secure checkout, best prices."
         />
         <meta 
           name="keywords" 
-          content="posters bangladesh, wall art bd, music posters, movie posters, anime posters, aesthetic posters, premium posters dhaka" 
+          content="posters bangladesh, wall art bd, home decor dhaka, solar wobbler, music posters, movie posters, anime posters, aesthetic posters, premium posters dhaka" 
         />
         <link rel="canonical" href="https://vybebd.store" />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://vybebd.store" />
-        <meta property="og:title" content="vybebd.store - Premium Posters & Wall Art Bangladesh" />
-        <meta property="og:description" content="Turn your walls into vibes with premium quality posters. Free delivery on orders over ৳999." />
+        <meta property="og:title" content="VYBE — Premium Posters, Wall Art & Home Decor Bangladesh" />
+        <meta property="og:description" content="Turn your walls into vibes with premium quality posters & home decor. Fast delivery across Bangladesh." />
         <meta property="og:image" content="https://vybebd.store/og-image.jpg" />
         
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:url" content="https://vybebd.store" />
-        <meta name="twitter:title" content="vybebd.store - Premium Posters & Wall Art" />
-        <meta name="twitter:description" content="Turn your walls into vibes with premium quality posters. Free delivery on orders over ৳999." />
+        <meta name="twitter:title" content="VYBE — Premium Posters & Home Decor Bangladesh" />
+        <meta name="twitter:description" content="Turn your walls into vibes with premium quality posters & home decor. Fast delivery across Bangladesh." />
         <meta name="twitter:image" content="https://vybebd.store/og-image.jpg" />
-        <meta name="twitter:image:alt" content="VYBE - Premium Posters & Wall Art Bangladesh" />
+        <meta name="twitter:image:alt" content="VYBE — Premium Posters & Home Decor Bangladesh" />
 
         {/* Organization Schema — helps Google Knowledge Panel */}
         <script type="application/ld+json">{JSON.stringify({
@@ -99,7 +100,7 @@ export default function Home() {
           name: 'VYBE',
           url: 'https://vybebd.store',
           logo: 'https://vybebd.store/vybe-logo.svg',
-          description: 'Premium poster and wall art store in Bangladesh. Anime, Marvel, Football, Cars, Music posters.',
+          description: 'Premium poster, wall art & home decor store in Bangladesh. Anime, Marvel, Football, Cars, Music posters and Solar Wobbler kinetic art.',
           sameAs: [
             'https://www.facebook.com/profile.php?id=61580594942475',
             'https://www.instagram.com/vybe.bd/',
@@ -160,6 +161,9 @@ export default function Home() {
           <>
             {/* Collection Grid */}
             <CollectionGrid darkMode={darkMode} />
+
+            {/* Home Decor Spotlight — bridge section */}
+            <HomeDecorSpotlight darkMode={darkMode} />
 
             {/* Featured Products */}
             <FeaturedProducts darkMode={darkMode} />

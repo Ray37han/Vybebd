@@ -38,12 +38,12 @@ export const useCartStore = create(
         
         // Defensive checks
         if (!item) {
-          console.error('❌ Cannot add null/undefined item to cart');
+          console.error('Cannot add null/undefined item to cart');
           return state;
         }
         
         if (!item.product || !item.product._id) {
-          console.error('❌ Cannot add item without product or product._id', item);
+          console.error('Cannot add item without product or product._id', item);
           return state;
         }
         
@@ -113,7 +113,13 @@ export const useCartStore = create(
       getTotal: () => {
         const { items } = get();
         return items.reduce((total, item) => {
-          if (!item?.product?.sizes) return total;
+          // Wobbler / single-SKU products have no sizes[] — fall back to basePrice
+          const hasSizes = item?.product?.sizes && Array.isArray(item.product.sizes) && item.product.sizes.length > 0;
+          if (!hasSizes) {
+            const price = item?.product?.basePrice || 0;
+            const quantity = Number.isFinite(Number(item.quantity)) ? Number(item.quantity) : 1;
+            return total + price * quantity;
+          }
           const tier = item.tier || 'Standard';
           const sizes = item.product.sizes;
           const sizePrice =

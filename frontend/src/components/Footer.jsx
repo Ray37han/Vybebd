@@ -95,7 +95,21 @@ export default function Footer() {
                 <Link to="/products" className={`inline-block py-2 min-h-[44px] transition ${
                   darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'
                 }`}>
-                  Shop
+                  Shop Posters
+                </Link>
+              </li>
+              <li>
+                <Link to="/home-decor" className={`inline-block py-2 min-h-[44px] transition ${
+                  darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'
+                }`}>
+                  🏠 Home Decor
+                </Link>
+              </li>
+              <li>
+                <Link to="/solar-wobbler" className={`inline-block py-2 min-h-[44px] transition ${
+                  darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'
+                }`}>
+                  ☀️ Solar Wobbler
                 </Link>
               </li>
               <li>

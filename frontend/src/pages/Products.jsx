@@ -61,6 +61,19 @@ const categories = [
   { value: 'minimalist', label: 'Minimalist', icon: '⚪' },
   { value: 'vintage', label: 'Vintage', icon: '📻' },
   { value: 'modern', label: 'Modern', icon: '🔮' },
+
+  // ── Home Decor ────────────────────────────────────────────────────────────
+  { value: 'home-decor', label: '🏠 All Home Decor', icon: '🏠' },
+  { value: 'cushion-cover', label: 'Cushion Covers', icon: '🛋️' },
+  { value: 'throw-pillow', label: 'Throw Pillows', icon: '✨' },
+  { value: 'wall-clock', label: 'Wall Clocks', icon: '🕐' },
+  { value: 'photo-frame', label: 'Photo Frames', icon: '🖼️' },
+  { value: 'canvas-print', label: 'Canvas Prints', icon: '🎨' },
+  { value: 'table-decor', label: 'Table Decor', icon: '🌿' },
+
+  // ── Solar Wobbler ─────────────────────────────────────────────────────────
+  { value: 'solar-wobbler', label: '☀️ Solar Wobbler', icon: '☀️' },
+  { value: 'wobbler', label: 'Wobblers', icon: '🌀' },
 ];
 
 /**
@@ -622,28 +635,46 @@ export default function Products() {
                     {/* Active Filters Summary */}
                     <div>
                       <label className={`text-xs font-semibold mb-1.5 block ${darkMode ? 'text-moon-silver/70' : 'text-gray-500'}`}>
-                        🏷️ Active Filters
+                        Active Filters
                       </label>
                       <div className="flex flex-wrap gap-1.5">
                         {filters.category && (
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${darkMode ? 'bg-moon-gold/20 text-moon-gold' : 'bg-purple-100 text-purple-700'
                             }`}>
                             {filters.category}
-                            <button onClick={() => handleFilterChange('category', '')} className="hover:opacity-70">×</button>
+                            <button
+                              onClick={() => handleFilterChange('category', '')}
+                              aria-label={`Remove ${filters.category} filter`}
+                              className="w-5 h-5 flex items-center justify-center rounded-full hover:opacity-70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-current ml-0.5"
+                            >
+                              <FiX className="w-3 h-3" />
+                            </button>
                           </span>
                         )}
                         {filters.tag && (
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-700'
                             }`}>
                             #{filters.tag}
-                            <button onClick={() => handleFilterChange('tag', '')} className="hover:opacity-70">×</button>
+                            <button
+                              onClick={() => handleFilterChange('tag', '')}
+                              aria-label={`Remove ${filters.tag} tag filter`}
+                              className="w-5 h-5 flex items-center justify-center rounded-full hover:opacity-70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-current ml-0.5"
+                            >
+                              <FiX className="w-3 h-3" />
+                            </button>
                           </span>
                         )}
                         {(filters.minPrice || filters.maxPrice) && (
                           <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${darkMode ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'
                             }`}>
                             ৳{filters.minPrice || '0'}-{filters.maxPrice || '∞'}
-                            <button onClick={() => { handleFilterChange('minPrice', ''); setTimeout(() => handleFilterChange('maxPrice', ''), 50); }} className="hover:opacity-70">×</button>
+                            <button
+                              onClick={() => { handleFilterChange('minPrice', ''); setTimeout(() => handleFilterChange('maxPrice', ''), 50); }}
+                              aria-label="Remove price range filter"
+                              className="w-5 h-5 flex items-center justify-center rounded-full hover:opacity-70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-current ml-0.5"
+                            >
+                              <FiX className="w-3 h-3" />
+                            </button>
                           </span>
                         )}
                         {!filters.category && !filters.tag && !filters.minPrice && !filters.maxPrice && (
@@ -657,7 +688,7 @@ export default function Products() {
                   {availableTags.length > 0 && (
                     <div className="mt-3 pt-3 border-t" style={{ borderColor: darkMode ? 'rgba(212,175,55,0.1)' : 'rgba(147,51,234,0.1)' }}>
                       <label className={`text-xs font-semibold mb-2 block ${darkMode ? 'text-moon-silver/70' : 'text-gray-500'}`}>
-                        🏷️ Filter by Tag
+                        Filter by Tag
                       </label>
                       <div className="flex flex-wrap gap-2">
                         {availableTags.slice(0, 15).map((t) => (

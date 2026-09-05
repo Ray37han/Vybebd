@@ -8,11 +8,24 @@ export default defineConfig({
   base: '/',
   build: {
     // Force new hashes on each build
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
         entryFileNames: `assets/[name]-[hash]-v2.js`,
         chunkFileNames: `assets/[name]-[hash]-v2.js`,
-        assetFileNames: `assets/[name]-[hash]-v2.[ext]`
+        assetFileNames: `assets/[name]-[hash]-v2.[ext]`,
+        manualChunks: {
+          // Core React runtime — cached across all pages
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // Animation library — large, changes rarely
+          'vendor-framer': ['framer-motion'],
+          // State + utilities
+          'vendor-state': ['zustand'],
+          // Icon library
+          'vendor-icons': ['react-icons'],
+          // Firebase — only needed for auth pages
+          'vendor-firebase': ['firebase/app', 'firebase/auth'],
+        },
       }
     }
   },

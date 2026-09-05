@@ -64,6 +64,12 @@ router.get('/', cacheMiddleware(CACHE_TTL), async (req, res) => {
       query.stock = { $gt: 0 };
     }
 
+    // ── Product type filter (poster | home-decor | wobbler) ──
+    const { productType } = req.query;
+    if (productType) {
+      query.productType = productType;
+    }
+
     if (featured) query.featured = featured === 'true';
     if (minPrice || maxPrice) {
       query.basePrice = {};

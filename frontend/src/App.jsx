@@ -5,6 +5,7 @@ import Footer from './components/Footer'
 import BackToTop from './components/BackToTop'
 import VybePageTransitions from './components/VybePageTransitions'
 import CheckoutSkeleton from './components/CheckoutSkeleton'
+import LoadingStore from './components/LoadingStore'
 import './components/PageTransitions.css'
 import Home from './pages/Home'
 import Products from './pages/Products'
@@ -22,6 +23,9 @@ import NotFound from './pages/NotFound'
 // Lazy load checkout flow for better performance
 const Checkout = lazy(() => import('./pages/QuickCheckout'))
 const OrderSuccess = lazy(() => import('./pages/OrderConfirmed'))
+// Lazy load new category landing pages
+const HomeDecor = lazy(() => import('./pages/HomeDecor'))
+const SolarWobbler = lazy(() => import('./pages/SolarWobbler'))
 // Admin components - all lowercase 'admin' folder
 import AdminDashboard from './pages/admin/Dashboard'
 import AdminProducts from './pages/admin/Products'
@@ -87,6 +91,17 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Products />} />
             <Route path="/products/:id" element={<ProductDetail />} />
+            {/* New category landing pages */}
+            <Route path="/home-decor" element={
+              <Suspense fallback={<LoadingStore />}>
+                <HomeDecor />
+              </Suspense>
+            } />
+            <Route path="/solar-wobbler" element={
+              <Suspense fallback={<LoadingStore />}>
+                <SolarWobbler />
+              </Suspense>
+            } />
             <Route path="/customize" element={<Customize />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/login" element={<Login />} />

@@ -187,6 +187,23 @@ function ProductPreview({ order }) {
             {product.quantity > 1 && (
               <div className="mt-0.5 mb-0.5"><span className="text-[10px] font-semibold text-cyan-300 bg-cyan-900/40 px-1.5 py-0.5 rounded">Qty: {product.quantity}</span></div>
             )}
+            {/* Product type + tier badges */}
+            <div className="mt-0.5 flex flex-wrap gap-1 text-[10px]">
+              {product.productType && product.productType !== 'poster' && (
+                <span className={`px-1.5 py-0.5 rounded font-semibold ${
+                  product.productType === 'wobbler'
+                    ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-400/20'
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-400/20'
+                }`}>
+                  {product.productType === 'wobbler' ? '☀️ Wobbler' : '🏠 Home Decor'}
+                </span>
+              )}
+              {product.tier && product.tier !== 'Standard' && (
+                <span className="px-1.5 py-0.5 rounded font-semibold bg-orange-500/20 text-orange-300 border border-orange-400/20">
+                  🔥 {product.tier}
+                </span>
+              )}
+            </div>
             {(product.size || product.frame || product.frameColor || product.customization?.frameColor) && (
               <div className="mt-0.5 flex flex-wrap gap-1 text-[10px] text-slate-400">
                 {product.size && <span className="bg-white/5 border border-white/10 px-1.5 py-0.5 rounded">Size: {product.size}</span>}

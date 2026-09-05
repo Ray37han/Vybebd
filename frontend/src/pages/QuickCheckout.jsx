@@ -212,14 +212,16 @@ export default function QuickCheckout() {
               const price = variant?.price || item.product?.basePrice || 0;
 
               return {
-                name: item.product?.name || form.productName.trim(),
-                productId: item.product?._id || '',
-                quantity: parseInt(item.quantity, 10),
-                price: parseFloat(price),
-                image_url: item.product?.images?.[0]?.urls?.thumbnail || item.product?.images?.[0]?.url || '',
-                size: item.size || '',
-                frame: item.frame || '',
-                frameColor: item.customization?.frameColor || '',
+                name:        item.product?.name || form.productName.trim(),
+                productId:   item.product?._id || '',
+                productType: item.product?.productType || 'poster',
+                quantity:    parseInt(item.quantity, 10),
+                price:       parseFloat(price),
+                image_url:   item.product?.images?.[0]?.urls?.thumbnail || item.product?.images?.[0]?.url || '',
+                size:        item.size || '',
+                tier:        item.tier || '',
+                frame:       item.frame || '',
+                frameColor:  item.customization?.frameColor || '',
               };
             })
           : [

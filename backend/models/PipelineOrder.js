@@ -12,14 +12,16 @@ import mongoose from 'mongoose';
 
 const pipelineProductSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, trim: true },
-    productId: { type: String, trim: true, default: '' },
-    quantity: { type: Number, required: true, min: 1, default: 1 },
-    price: { type: Number, required: true, min: 0, default: 0 },
-    image_url: { type: String, trim: true, default: '' },
-    size: { type: String, trim: true, default: '' },
-    frame: { type: String, trim: true, default: '' },
-    frameColor: { type: String, trim: true, default: '' },
+    name:         { type: String, required: true, trim: true },
+    productId:    { type: String, trim: true, default: '' },
+    productType:  { type: String, trim: true, default: '' }, // 'poster' | 'home-decor' | 'wobbler'
+    quantity:     { type: Number, required: true, min: 1, default: 1 },
+    price:        { type: Number, required: true, min: 0, default: 0 },
+    image_url:    { type: String, trim: true, default: '' },
+    size:         { type: String, trim: true, default: '' },
+    tier:         { type: String, trim: true, default: '' }, // Standard | Premium
+    frame:        { type: String, trim: true, default: '' },
+    frameColor:   { type: String, trim: true, default: '' },
   },
   { _id: false }
 );

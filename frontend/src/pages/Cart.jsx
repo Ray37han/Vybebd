@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { FiTrash2, FiShoppingBag } from 'react-icons/fi';
+import { FiTrash2, FiShoppingBag, FiTag } from 'react-icons/fi';
 import { useCartStore, useAuthStore } from '../store';
 import { cartAPI } from '../api';
 import { useAnalytics } from '../context/AnalyticsContext';
@@ -110,8 +110,14 @@ export default function Cart() {
     );
   }
 
-  // Filter out corrupted items (missing product/sizes) to prevent crashes
-  const validItems = items.filter((item) => item?.product?.sizes && Array.isArray(item.product.sizes));
+  // Allow wobbler items (no sizes[]) and all items with a basePrice fallback.
+  // Previously this silently dropped wobbler items from the cart view.
+  const validItems = items.filter(
+    (item) => item?.product && (
+      (item.product.sizes && Array.isArray(item.product.sizes)) ||
+      item.product.basePrice != null
+    )
+  );
 
   const getVariantForCartItem = (item) => {
     const tier = item.tier || 'Standard';
@@ -124,13 +130,18 @@ export default function Cart() {
   };
 
   const getItemPrice = (item) => {
+    // Wobbler / single-SKU: no sizes variant, use basePrice directly
+    const hasSizes = item.product?.sizes?.length > 0;
+    if (!hasSizes) return item.product?.basePrice || 0;
     const variant = getVariantForCartItem(item);
     return variant?.price || item.product?.basePrice || 0;
   };
 
   const getItemOriginalPrice = (item) => {
-    const variant = getVariantForCartItem(item);
+    const hasSizes = item.product?.sizes?.length > 0;
     const price = getItemPrice(item);
+    if (!hasSizes) return item.product?.originalPrice || Math.round(price / 0.75);
+    const variant = getVariantForCartItem(item);
     return variant?.originalPrice || item.product?.originalPrice || Math.round(price / 0.75);
   };
 
@@ -198,14 +209,20 @@ export default function Cart() {
                     <h3 className={`font-semibold text-lg mb-1 ${
                       darkMode ? 'text-moon-silver' : 'text-gray-900'
                     }`}>{item.product?.name}</h3>
+                    {/* Smart label: wobbler shows product type, poster shows size/tier/frame */}
                     <p className={`text-sm mb-2 ${
                       darkMode ? 'text-moon-silver/60' : 'text-gray-600'
-                    }`}>Option: {item.tier || 'Standard'} • Size: {item.size}{item.frame && item.frame !== 'No Frame' ? ` • Frame: ${item.frame}` : ''}</p>
+                    }`}>
+                      {item.product?.productType === 'wobbler'
+                        ? 'Solar Wobbler · Solar Powered'
+                        : `Option: ${item.tier || 'Standard'} • Size: ${item.size}${item.frame && item.frame !== 'No Frame' ? ` • Frame: ${item.frame}` : ''}`
+                      }
+                    </p>
                     {item.customization && (
                       <div className={`text-xs mb-2 space-y-1 ${
                         darkMode ? 'text-moon-gold/80' : 'text-purple-600'
                       }`}>
-                        <p>✨ Customized Poster</p>
+                        <p>✨ Customized Product</p>
                         {item.customization.uploadedImageUrl && (
                           <p>📸 Custom Image Uploaded</p>
                         )}
@@ -309,7 +326,9 @@ export default function Cart() {
               }`}>
                 <div>
                   <p className={`text-sm font-bold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-                    🎉 You're saving ৳{totalSavings.toFixed(2)}
+                    <span className="inline-flex items-center gap-1">
+                      <FiTag className="w-3.5 h-3.5" /> You're saving ৳{totalSavings.toFixed(2)}
+                    </span>
                   </p>
                   <p className={`text-xs mt-1 ${darkMode ? 'text-green-300/70' : 'text-green-600'}`}>
                     Base discount {bundleDiscountPercent > 0 && `+ ${bundleDiscountPercent}% Bundle Offer!`}

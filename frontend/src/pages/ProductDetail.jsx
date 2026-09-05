@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiShoppingCart, FiHeart, FiStar, FiX, FiZoomIn, FiImage } from 'react-icons/fi';
+import { FiShoppingCart, FiHeart, FiStar, FiX, FiZoomIn, FiImage, FiSun, FiTag, FiInfo, FiAlertTriangle, FiCheck, FiAlertCircle, FiCheckCircle, FiHome } from 'react-icons/fi';
 import { productsAPI, cartAPI } from '../api';
 import { useAuthStore, useCartStore } from '../store';
 import { useAnalytics } from '../context/AnalyticsContext';
@@ -11,7 +11,43 @@ import LoadingStore from '../components/LoadingStore';
 import { HeartButton } from '../components/AnimatedIcon';
 import MagneticButton from '../components/MagneticButton';
 import { TrustBanner } from '../components/TrustBadges';
+import StickyAddToCart from '../components/StickyAddToCart';
+import WobblerExtras from '../components/WobblerExtras';
+import CompleteYourSpace from '../components/CompleteYourSpace';
 import toast from 'react-hot-toast';
+
+// ── Product UI Configuration (module-level) ───────────────────────────────────────
+// Controls which variation selectors appear in ProductDetail based on product type.
+// To add a new product type in the future, add one key here — zero other changes needed.
+const PRODUCT_UI_CONFIG = {
+  poster: {
+    showTierSelector: true,
+    showSizeSelector: true,
+    showFrameSelector: true,
+    sizeRequired: true,
+    sizeLabel: 'Select Size',
+    sizeHint: 'Tip: Select your preferred poster size to see the price',
+    showCustomizeButton: true,
+  },
+  'home-decor': {
+    showTierSelector: false,
+    showSizeSelector: true,
+    showFrameSelector: false,
+    sizeRequired: true,
+    sizeLabel: 'Select Option',
+    sizeHint: 'Choose your preferred size or variant',
+    showCustomizeButton: false,
+  },
+  wobbler: {
+    showTierSelector: false,
+    showSizeSelector: false,
+    showFrameSelector: false,
+    sizeRequired: false, // single SKU — no size selection needed
+    sizeLabel: null,
+    sizeHint: null,
+    showCustomizeButton: false,
+  },
+};
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -27,6 +63,7 @@ export default function ProductDetail() {
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
   const [isAdded, setIsAdded] = useState(false);
   const [darkMode, setDarkMode] = useState(false); // Default to light theme
+  const priceRef = useRef(null); // For StickyAddToCart IntersectionObserver
   const { isAuthenticated } = useAuthStore();
   const addToCart = useCartStore((state) => state.addItem);
   const { trackEvent } = useAnalytics();
@@ -79,7 +116,9 @@ export default function ProductDetail() {
       return;
     }
 
-    if (!selectedSize) {
+    // For products that don't require size (wobbler), skip size validation
+    const needsSize = (PRODUCT_UI_CONFIG[product?.productType] || PRODUCT_UI_CONFIG.poster).sizeRequired;
+    if (needsSize && !selectedSize) {
       toast.error('Please select a size');
       return;
     }
@@ -89,7 +128,7 @@ export default function ProductDetail() {
       addToCart({
         product,
         quantity,
-        size: selectedSize,
+        size: selectedSize || 'Standard',
         tier: selectedTier,
         frame: selectedFrame || 'No Frame',
         _id: Date.now().toString(),
@@ -104,8 +143,8 @@ export default function ProductDetail() {
         price: product.basePrice,
       });
 
-      console.log('✅ Added to local cart');
-      toast.success('Added to cart!');
+      console.log('Added to local cart');
+      toast.success(<span><FiCheckCircle className="inline mr-2" /> Added to cart!</span>);
 
       // Then sync with backend if authenticated (don't block on this)
       if (isAuthenticated) {
@@ -119,31 +158,36 @@ export default function ProductDetail() {
 
         try {
           await cartAPI.add(cartItem);
-          console.log('✅ Synced with backend');
+          console.log('Synced with backend');
         } catch (apiError) {
-          console.warn('⚠️ Failed to sync with backend, but item is in local cart:', apiError);
+          console.warn('Failed to sync with backend, but item is in local cart:', apiError);
           // Don't show error to user - local cart is updated successfully
         }
       }
     } catch (error) {
-      console.error('❌ Failed to add to cart:', error);
-      toast.error('Failed to add to cart');
+      console.error('Failed to add to cart:', error);
+      toast.error(<span><FiAlertCircle className="inline mr-2" /> Failed to add to cart</span>);
     }
   };
 
   /**
    * Buy Now - Add to cart and go directly to checkout
    * Skips the cart page for faster purchase flow
+   * For single-SKU products (wobbler, sizeRequired=false), skips size selection.
    */
-const handleBuyNow = () => {
-    if (!selectedSize) {
+  const handleBuyNow = () => {
+    const needsSize = (PRODUCT_UI_CONFIG[product?.productType] || PRODUCT_UI_CONFIG.poster).sizeRequired;
+    if (needsSize && !selectedSize) {
       toast.error('Please select a size first');
       return;
     }
 
-    // Build a descriptive label: "Anime Poster – A3 (Premium)"
-    const productLabel =
-      selectedTier && selectedTier !== 'Standard'
+    const isWobbler = product?.productType === 'wobbler';
+
+    // Build a descriptive label
+    const productLabel = isWobbler
+      ? product.name
+      : selectedTier && selectedTier !== 'Standard'
         ? `${product.name} – ${selectedSize} (${selectedTier})`
         : `${product.name} – ${selectedSize}`;
 
@@ -152,7 +196,7 @@ const handleBuyNow = () => {
       name:      productLabel,
       price:     String(currentPrice),
       qty:       String(quantity),
-      size:      selectedSize,
+      size:      selectedSize || 'Standard',
       frame:     selectedFrame || 'No Frame',
     });
 
@@ -165,9 +209,7 @@ const handleBuyNow = () => {
       product.images?.[0]?.url ||
       '';
 
-    if (buyNowImageUrl) {
-      qs.set('image', buyNowImageUrl);
-    }
+    if (buyNowImageUrl) qs.set('image', buyNowImageUrl);
 
     navigate(`/quick-checkout?${qs.toString()}`);
   };
@@ -186,16 +228,29 @@ const handleBuyNow = () => {
 
   if (!product) return null;
 
+  const uiConfig = PRODUCT_UI_CONFIG[product.productType] || PRODUCT_UI_CONFIG.poster;
+  const isWobbler = product.productType === 'wobbler';
+  const isHomeDecor = product.productType === 'home-decor' || product.productType === 'wobbler';
+
   const productImageUrl = product.images?.[0]?.urls?.large || product.images?.[0]?.urls?.medium || product.images?.[0]?.url;
   const productUrl = `https://vybebd.store/products/${product._id}`;
-  const productDesc = `Buy ${product.name} poster in Bangladesh. ${(product.description || '').slice(0, 130)}. Fast delivery, secure checkout at vybebd.store`;
 
-  const currentStdVariant = product.sizes.find(
-    (s) => s.name === selectedSize && (s.tier || 'Standard') === 'Standard'
-  );
-  const currentPremVariant = product.sizes.find(
-    (s) => s.name === selectedSize && s.tier === 'Premium'
-  );
+  // SEO description — product-type-aware
+  const productDesc = isWobbler
+    ? `Buy ${product.name} in Bangladesh. Solar-powered kinetic wobbler — no batteries, just light. Fast delivery, secure checkout at vybebd.store.`
+    : isHomeDecor
+    ? `Buy ${product.name} in Bangladesh. ${(product.shortDescription || product.description || '').slice(0, 130)}. Fast delivery, secure checkout at vybebd.store`
+    : `Buy ${product.name} poster in Bangladesh. ${(product.description || '').slice(0, 130)}. Fast delivery, secure checkout at vybebd.store`;
+
+  // Guard: only compute size/tier pricing if product has a sizes array
+  const hasSizes = Array.isArray(product.sizes) && product.sizes.length > 0;
+
+  const currentStdVariant = hasSizes
+    ? product.sizes.find((s) => s.name === selectedSize && (s.tier || 'Standard') === 'Standard')
+    : null;
+  const currentPremVariant = hasSizes
+    ? product.sizes.find((s) => s.name === selectedSize && s.tier === 'Premium')
+    : null;
   const currentVariant = selectedTier === 'Premium'
     ? currentPremVariant || (currentStdVariant ? {
         ...currentStdVariant,
@@ -206,15 +261,21 @@ const handleBuyNow = () => {
   const currentOriginalPrice =
     currentVariant?.originalPrice || product.originalPrice || Math.round(currentPrice / 0.75);
 
-  const uniqueAvailableSizes = Array.from(new Set(product.sizes.map((s) => s.name)));
+  const uniqueAvailableSizes = hasSizes ? Array.from(new Set(product.sizes.map((s) => s.name))) : [];
   const premiumMarkup = { A5: 100, A4: 150, A3: 200 };
 
+
   return (
-    <div className="pt-24 pb-12 md:pb-12 pb-32 min-h-screen">
+    <div className={`pt-24 pb-12 min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gradient-to-b from-moon-midnight to-moon-space' : 'bg-white'}`}>
       <Helmet>
-        <title>{product.name} | Buy Poster Online Bangladesh | VYBE</title>
+        <title>{isWobbler ? `${product.name} | Solar Wobbler Bangladesh | VYBE` : isHomeDecor ? `${product.name} | Home Decor Bangladesh | VYBE` : `${product.name} | Buy Poster Online Bangladesh | VYBE`}</title>
         <meta name="description" content={productDesc} />
-        <meta name="keywords" content={`${product.name}, ${product.category} poster, wall art bangladesh, poster bd, buy poster online${product.tags?.length ? ', ' + product.tags.join(', ') : ''}`} />
+        <meta name="keywords" content={isWobbler
+          ? `${product.name}, solar wobbler bangladesh, kinetic art bd, solar toy dhaka, desk decor, solar powered toy${product.tags?.length ? ', ' + product.tags.join(', ') : ''}`
+          : isHomeDecor
+          ? `${product.name}, home decor bangladesh, wall decor bd, buy home decor online${product.tags?.length ? ', ' + product.tags.join(', ') : ''}`
+          : `${product.name}, ${product.category} poster, wall art bangladesh, poster bd, buy poster online${product.tags?.length ? ', ' + product.tags.join(', ') : ''}`
+        } />
         <link rel="canonical" href={productUrl} />
 
         {/* Open Graph — product image shows when shared on WhatsApp/Facebook */}
@@ -306,16 +367,19 @@ const handleBuyNow = () => {
               </div>
             </motion.div>
             {product.images.length > 1 && (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-4" role="tablist" aria-label="Product image thumbnails">
                 {product.images.map((img, idx) => (
                   <button
                     key={idx}
+                    role="tab"
+                    aria-selected={selectedImage === idx}
+                    aria-label={`View image ${idx + 1} of ${product.images.length}`}
                     onClick={() => setSelectedImage(idx)}
-                    className={`card overflow-hidden transition-all ${
+                    className={`card overflow-hidden transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vybe-purple ${
                       selectedImage === idx ? 'ring-2 ring-vybe-purple' : ''
                     }`}
                   >
-                    <img src={img.urls?.thumbnail || img.url} alt="" loading="lazy" className="w-full h-20 object-cover" />
+                    <img src={img.urls?.thumbnail || img.url} alt={`${product.name} — view ${idx + 1}`} loading="lazy" className="w-full h-20 object-cover" />
                   </button>
                 ))}
               </div>
@@ -324,14 +388,27 @@ const handleBuyNow = () => {
 
           {/* Details */}
           <div>
+            {/* Product-type-aware promo badge */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="inline-block mb-4 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-full shadow-lg"
+              className={`inline-flex items-center gap-2 mb-4 px-4 py-2 font-bold rounded-full shadow-lg text-white ${
+                isWobbler
+                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                  : isHomeDecor
+                  ? 'bg-gradient-to-r from-amber-500 to-rose-500'
+                  : 'bg-gradient-to-r from-green-500 to-emerald-600'
+              }`}
             >
-              🎉 25% OFF - Limited Time!
+              {isWobbler ? (
+                <><FiSun className="w-4 h-4" /> Solar Powered · Zero Batteries</>
+              ) : isHomeDecor ? (
+                <><FiHome className="w-4 h-4" /> Home Decor · Premium Quality</>
+              ) : (
+                <><FiTag className="w-4 h-4" /> 25% OFF — Limited Time</>
+              )}
             </motion.div>
-            <h1 className="text-4xl font-bold mb-4">{product.name}</h1>
+            <h1 className={`text-3xl sm:text-4xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{product.name}</h1>
             <div className="flex items-center mb-4">
               <div className="flex items-center text-yellow-400">
                 {[...Array(5)].map((_, i) => (
@@ -348,8 +425,22 @@ const handleBuyNow = () => {
               </span>
             </div>
             
-            <div className="flex items-center gap-4 mb-6">
-              {selectedSize ? (
+            {/* Price display — type-aware: wobbler/sizeless home-decor = flat price, posters = size-dependent */}
+            <div ref={priceRef} className="flex items-center gap-4 mb-4">
+              {(isWobbler || (isHomeDecor && !hasSizes)) ? (
+                /* Single-SKU products: show base price directly */
+                <>
+                  <p className={`text-4xl font-bold ${isWobbler ? 'text-orange-500' : 'text-amber-600'}`}>৳{product.basePrice}</p>
+                  {product.originalPrice && product.originalPrice > product.basePrice && (
+                    <div className="flex flex-col">
+                      <span className={`text-xl line-through ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}>৳{product.originalPrice}</span>
+                      <span className="text-sm font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                        {Math.round(((product.originalPrice - product.basePrice) / product.originalPrice) * 100)}% OFF
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : selectedSize ? (
                 <>
                   <p className="text-4xl font-bold text-vybe-purple">৳{currentPrice}</p>
                   <div className="flex flex-col">
@@ -361,16 +452,37 @@ const handleBuyNow = () => {
                 </>
               ) : (
                 <div className="flex items-center gap-3">
-                  <p className="text-3xl font-bold text-gray-400">৳{product.basePrice}+</p>
-                  <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                  <p className={`text-3xl font-bold ${darkMode ? 'text-gray-400' : 'text-gray-400'}`}>৳{product.basePrice}+</p>
+                  <span className={`text-sm px-3 py-1 rounded-full ${darkMode ? 'text-gray-400 bg-gray-800' : 'text-gray-500 bg-gray-100'}`}>
                     Starting price
                   </span>
                 </div>
               )}
             </div>
-            <p className="text-gray-600 mb-6 leading-relaxed">{product.description}</p>
 
-            {/* Tier Selection */}
+            {/* Stock availability indicator — wobbler and sizeless home-decor */}
+            {(isWobbler || (isHomeDecor && !hasSizes)) && (
+              <div className="flex items-center gap-2 mb-5">
+                {(product.stock > 0 || product.stock === undefined) ? (
+                  <>
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+                    <span className={`text-sm font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                      In Stock — Ships within 2–3 days
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                    <span className="text-sm font-semibold text-red-500">Out of Stock</span>
+                  </>
+                )}
+              </div>
+            )}
+
+            <p className={`mb-6 leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{product.description}</p>
+
+            {/* Tier Selection — poster only */}
+            {uiConfig.showTierSelector && (
             <div className="mb-6">
               <label className="block text-sm font-semibold mb-3">Quality:</label>
               <div className="relative flex rounded-xl bg-gray-100 p-1 gap-1">
@@ -397,11 +509,13 @@ const handleBuyNow = () => {
                 ))}
               </div>
             </div>
+            )}
 
-            {/* Size Selection */}
+            {/* Size Selection — shown for poster and home-decor, not wobbler */}
+            {uiConfig.showSizeSelector && (
             <div className="mb-6">
               <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-semibold">Select Size: <span className="text-red-500">*</span></label>
+                <label className="text-sm font-semibold">{uiConfig.sizeLabel}: <span className="text-red-500">*</span></label>
                 {!selectedSize && (
                   <motion.span 
                     className="text-xs text-vybe-purple font-semibold flex items-center gap-1"
@@ -419,12 +533,12 @@ const handleBuyNow = () => {
                   : 'border-transparent bg-transparent'
               }`}>
                 {uniqueAvailableSizes.map((sizeName, sizeIdx) => {
-                  const standardVariant = product.sizes.find(
+                  const standardVariant = hasSizes ? product.sizes.find(
                     (s) => s.name === sizeName && (s.tier || 'Standard') === 'Standard'
-                  );
-                  const premiumVariantFromDB = product.sizes.find(
+                  ) : null;
+                  const premiumVariantFromDB = hasSizes ? product.sizes.find(
                     (s) => s.name === sizeName && s.tier === 'Premium'
-                  );
+                  ) : null;
                   const sizeVariant = selectedTier === 'Premium'
                     ? premiumVariantFromDB || (standardVariant ? {
                         ...standardVariant,
@@ -434,7 +548,7 @@ const handleBuyNow = () => {
                     : standardVariant;
                   if (!sizeVariant) return null;
                   const flameDelay = sizeIdx * 0.3;
-                  const isPremium = selectedTier === 'Premium';
+                  const isPremium = uiConfig.showTierSelector && selectedTier === 'Premium';
                   const isSelected = selectedSize === sizeName;
 
                   return (
@@ -464,7 +578,10 @@ const handleBuyNow = () => {
                         animate={{ y: [0, -4, 0], scale: [1, 1.3, 1], rotate: [-8, 8, -8] }}
                         transition={{ duration: 1.0, repeat: Infinity, ease: 'easeInOut', delay: flameDelay }}
                       >
-                        🔥
+                        {/* Flame indicator for premium — SVG icon */}
+                        <svg className="w-4 h-4 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2c0 0-4 4-4 8a4 4 0 0 0 8 0c0-1.5-.5-3-1.5-4C13.5 8 13 10 12 10c-1.1 0-2-.9-2-2 0-2 2-6 2-6z" />
+                        </svg>
                       </motion.span>
                     )}
                     <div className="flex flex-col items-start">
@@ -481,19 +598,21 @@ const handleBuyNow = () => {
                   </motion.button>
                   );
                 })}              </div>
-              {!selectedSize && (
+              {!selectedSize && uiConfig.sizeHint && (
                 <motion.p 
                   className="text-xs text-gray-500 mt-2 flex items-center gap-1"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <span>💡</span>
-                  Tip: Select your preferred poster size to see the price
+                  <FiInfo className="w-3.5 h-3.5 flex-none" />
+                  {uiConfig.sizeHint}
                 </motion.p>
               )}
             </div>
+            )}
 
-            {/* Frame Selection */}
+            {/* Frame Selection — poster only */}
+            {uiConfig.showFrameSelector && (
             <div className="mb-6">
               <label className="block text-sm font-semibold mb-3">
                 Choose Frame: <span className="text-xs text-gray-500">(Optional)</span>
@@ -537,17 +656,26 @@ const handleBuyNow = () => {
                 ))}
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                {selectedFrame ? `✓ ${selectedFrame.charAt(0).toUpperCase() + selectedFrame.slice(1)} frame selected` : 'Poster only (no frame)'}
+                {selectedFrame
+                  ? (
+                    <span className="flex items-center gap-1">
+                      <FiCheck className="w-3 h-3 text-green-500" />
+                      {selectedFrame.charAt(0).toUpperCase() + selectedFrame.slice(1)} frame selected
+                    </span>
+                  )
+                  : 'Poster only (no frame)'}
               </p>
             </div>
+            )}
 
             {/* Quantity */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold mb-2">Quantity:</label>
-              <div className="flex items-center gap-3">
+              <label className="block text-sm font-semibold mb-2" id="qty-label">Quantity:</label>
+              <div className="flex items-center gap-3" role="group" aria-labelledby="qty-label">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   disabled={quantity <= 1}
+                  aria-label="Decrease quantity"
                   className={`w-12 h-12 rounded-lg border-2 font-bold text-xl transition-all flex items-center justify-center ${
                     quantity <= 1
                       ? 'border-gray-200 text-gray-300 cursor-not-allowed'
@@ -560,6 +688,7 @@ const handleBuyNow = () => {
                   type="number"
                   min="1"
                   value={quantity}
+                  aria-label="Quantity"
                   onChange={(e) => {
                     const val = parseInt(e.target.value) || 1;
                     setQuantity(Math.max(1, val));
@@ -568,6 +697,7 @@ const handleBuyNow = () => {
                 />
                 <button
                   onClick={() => setQuantity(quantity + 1)}
+                  aria-label="Increase quantity"
                   className="w-12 h-12 rounded-lg border-2 border-vybe-purple text-vybe-purple hover:bg-vybe-purple hover:text-white font-bold text-xl transition-all flex items-center justify-center active:scale-95"
                 >
                   +
@@ -577,7 +707,8 @@ const handleBuyNow = () => {
 
             {/* Actions */}
             <div className="space-y-3">
-              {/* Customize Button - Coming Soon */}
+              {/* Customize Button — poster only, Coming Soon */}
+              {uiConfig.showCustomizeButton && (
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 cursor-not-allowed opacity-60 ${
@@ -592,6 +723,7 @@ const handleBuyNow = () => {
                   (Coming Soon...)
                 </span>
               </motion.div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex gap-3 w-full">
@@ -604,13 +736,13 @@ const handleBuyNow = () => {
                       setIsAdded(false);
                     }, 2500);
                   }}
-                  disabled={!selectedSize}
-                  className={`btn-cart flex-1 ${!selectedSize ? 'opacity-50 cursor-not-allowed' : ''} ${isAdded ? 'active' : ''}`}
+                  disabled={uiConfig.sizeRequired && !selectedSize}
+                  className={`btn-cart flex-1 ${uiConfig.sizeRequired && !selectedSize ? 'opacity-50 cursor-not-allowed' : ''} ${isAdded ? 'active' : ''}`}
                 >
                   <span>
                     <span className="flex items-center justify-center gap-2">
                       <FiShoppingCart />
-                      {!selectedSize ? 'Select Size' : 'Add to Cart'}
+                      {uiConfig.sizeRequired && !selectedSize ? 'Select Option' : 'Add to Cart'}
                     </span>
                   </span>
                 </button>
@@ -618,11 +750,11 @@ const handleBuyNow = () => {
                 {/* Buy Now Button */}
                 <motion.button
                   onClick={handleBuyNow}
-                  disabled={!selectedSize}
-                  whileHover={selectedSize ? { scale: 1.02 } : {}}
-                  whileTap={selectedSize ? { scale: 0.98 } : {}}
+                  disabled={uiConfig.sizeRequired && !selectedSize}
+                  whileHover={(!uiConfig.sizeRequired || selectedSize) ? { scale: 1.02 } : {}}
+                  whileTap={(!uiConfig.sizeRequired || selectedSize) ? { scale: 0.98 } : {}}
                   className={`flex-1 px-6 py-4 rounded-lg font-bold text-white transition-all ${
-                    !selectedSize
+                    uiConfig.sizeRequired && !selectedSize
                       ? 'bg-gray-400 cursor-not-allowed opacity-50'
                       : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl'
                   }`}
@@ -631,7 +763,7 @@ const handleBuyNow = () => {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    {!selectedSize ? 'Select Size' : 'Buy Now'}
+                    {uiConfig.sizeRequired && !selectedSize ? 'Select Option' : 'Buy Now'}
                   </span>
                 </motion.button>
               </div>
@@ -639,27 +771,59 @@ const handleBuyNow = () => {
             
             {/* Trust Banner - Critical for BD market conversion */}
             <TrustBanner darkMode={darkMode} />
-            
-            {!selectedSize && (
-              <motion.div 
+
+            {uiConfig.sizeRequired && !selectedSize && (
+              <motion.div
                 className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                ⚠️ Please select a size above to add this product to your cart
+                <span className="flex items-center gap-2">
+                  <FiAlertTriangle className="w-4 h-4 flex-none" />
+                  Please select an option above to add this product to your cart
+                </span>
               </motion.div>
             )}
 
             {product.customizable && (
               <div className={`mt-6 p-4 rounded-lg ${darkMode ? 'bg-moon-midnight/50 border border-moon-gold/30' : 'bg-yellow-50 border border-yellow-200'}`}>
                 <p className={`text-sm ${darkMode ? 'text-moon-gold' : 'text-yellow-800'}`}>
-                  🎨 Customization feature coming soon! You'll be able to upload your own images and create personalized posters.
+                  <span className="flex items-center gap-2">
+                    <FiImage className="w-4 h-4 flex-none" />
+                    Customization feature coming soon! You'll be able to upload your own images and create personalized posters.
+                  </span>
                 </p>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Sticky Add to Cart — mobile conversion optimizer */}
+      <StickyAddToCart
+        product={product}
+        selectedSize={!uiConfig.sizeRequired ? 'Standard' : selectedSize}
+        currentPrice={currentPrice}
+        onAddToCart={() => {
+          setIsAdded(true);
+          handleAddToCart();
+          setTimeout(() => setIsAdded(false), 2500);
+        }}
+        disabled={uiConfig.sizeRequired && !selectedSize}
+        needsSize={uiConfig.sizeRequired}
+        darkMode={darkMode}
+        targetRef={priceRef}
+      />
+
+      {/* Below-fold Wobbler-specific content */}
+      {isWobbler && <WobblerExtras product={product} darkMode={darkMode} />}
+
+      {/* Cross-sell: poster pages show Wobbler teaser; wobbler pages handled in WobblerExtras */}
+      {!isWobbler && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+          <CompleteYourSpace productType={product.productType || 'poster'} darkMode={darkMode} />
+        </div>
+      )}
       {/* Zoom Modal */}
       <AnimatePresence>
         {isZoomed && (
@@ -740,17 +904,19 @@ const handleBuyNow = () => {
                 {product.images.map((img, idx) => (
                   <button
                     key={idx}
+                    aria-label={`View image ${idx + 1}`}
+                    aria-pressed={selectedImage === idx}
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedImage(idx);
                     }}
-                    className={`w-16 h-16 rounded-lg overflow-hidden transition-all ${
+                    className={`w-16 h-16 rounded-lg overflow-hidden transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
                       selectedImage === idx 
                         ? 'ring-2 ring-white scale-110' 
                         : 'opacity-60 hover:opacity-100'
                     }`}
                   >
-                    <img src={img.urls?.thumbnail || img.url} alt="" className="w-full h-full object-cover" />
+                    <img src={img.urls?.thumbnail || img.url} alt={`${product.name} — image ${idx + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
