@@ -3,12 +3,12 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiArrowRight, FiChevronLeft, FiChevronRight, FiSun, FiZap, FiCheck } from 'react-icons/fi';
 
-// Import optimized images
-import solarWobblerMonkeyImg from './images/SOLAR_WOBBLER_MONKEY.jpg';
-import solarWobblerBearImg from './images/SOLAR_WOBBLER_BEAR.jpg';
-import footballImg from './images/FOOTBALL.jpg';
-import gamesImg from './images/GAMES.jpg';
-import geminiImg from './images/gemini.jpg';
+// Import optimized images (modern WebP format)
+import solarWobblerMonkeyImg from './images/SOLAR_WOBBLER_MONKEY.webp';
+import solarWobblerBearImg from './images/SOLAR_WOBBLER_BEAR.webp';
+import footballImg from './images/FOOTBALL.webp';
+import gamesImg from './images/GAMES.webp';
+import geminiImg from './images/gemini.webp';
 
 /**
  * Real Solar Wobbler product variants from authentic photography
@@ -97,15 +97,18 @@ export default function HeroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
   const [activeWobblerIndex, setActiveWobblerIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
-  // Auto-advance main carousel - resets when slide changes or when user interacts
+  // Auto-advance main carousel - resets when slide changes, pauses on hover or hidden tab
   useEffect(() => {
+    if (isPaused) return;
     const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       setDirection(1);
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 7500);
     return () => clearInterval(timer);
-  }, [currentSlide]);
+  }, [currentSlide, isPaused]);
 
   // Auto-cycle wobbler variants when on the wobbler slide
   useEffect(() => {
@@ -248,6 +251,8 @@ export default function HeroCarousel() {
   return (
     <section 
       className="relative min-h-[75vh] sm:min-h-[82vh] lg:min-h-[88vh] overflow-hidden bg-gray-950 flex items-center touch-pan-y select-none sm:select-auto cursor-grab active:cursor-grabbing sm:cursor-auto"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -266,7 +271,7 @@ export default function HeroCarousel() {
           animate="center"
           exit="exit"
           transition={{ x: { type: 'spring', stiffness: 300, damping: 30 }, opacity: { duration: 0.25 } }}
-          className="absolute inset-0"
+          className="absolute inset-0 transform-gpu will-change-transform"
         >
           {slide.isSpecial ? (
             /* Animated Solar Wobbler Background - Bright & Sunlit morning window ambiance */
@@ -370,6 +375,7 @@ export default function HeroCarousel() {
               <img
                 src={slide.image}
                 alt={slide.title}
+                decoding="async"
                 className="w-full h-full object-cover"
               />
               <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient}`} />
@@ -544,6 +550,7 @@ export default function HeroCarousel() {
                     <img
                       src={otherWobbler.image}
                       alt={otherWobbler.name}
+                      decoding="async"
                       className="w-full h-full object-cover object-center"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
@@ -585,6 +592,7 @@ export default function HeroCarousel() {
                         <img
                           src={activeWobbler.image}
                           alt={activeWobbler.name}
+                          decoding="async"
                           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
                         />
 

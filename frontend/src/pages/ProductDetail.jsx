@@ -60,7 +60,6 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
-  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
   const [isAdded, setIsAdded] = useState(false);
   const [darkMode, setDarkMode] = useState(false); // Default to light theme
   const priceRef = useRef(null); // For StickyAddToCart IntersectionObserver
@@ -214,14 +213,6 @@ export default function ProductDetail() {
     navigate(`/quick-checkout?${qs.toString()}`);
   };
 
-  const handleMouseMove = (e) => {
-    if (!isZoomed) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setZoomPosition({ x, y });
-  };
-
   if (loading) {
     return <LoadingStore text="Loading product details" />;
   }
@@ -344,7 +335,6 @@ export default function ProductDetail() {
               animate={{ opacity: 1, scale: 1 }}
               className="relative card overflow-hidden mb-4 group cursor-pointer"
               onClick={() => setIsZoomed(true)}
-              onMouseMove={handleMouseMove}
             >
               <img
                 src={product.images[selectedImage]?.urls?.large || product.images[selectedImage]?.url}

@@ -2,10 +2,26 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/sitemap.xml",
-      "destination": "https://vybe-backend-93eu.onrender.com/api/sitemap"
+      "destination": "https://api.vybebd.store/api/sitemap"
     },
     {
       "source": "/products/:id(\\w{24})",
@@ -16,7 +32,7 @@
           "value": "(?i).*(facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Slackbot|Discordbot|Pinterest).*"
         }
       ],
-      "destination": "https://vybe-backend-93eu.onrender.com/api/og/product/:id"
+      "destination": "https://api.vybebd.store/api/og/product/:id"
     },
     {
       "source": "/(.*)",

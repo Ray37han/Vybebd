@@ -342,31 +342,31 @@ router.get('/orders', async (req, res) => {
     if (orderIdSearch) filter.orderId = { $regex: orderIdSearch, $options: 'i' };
 
     const skip  = (Number(page) - 1) * Number(limit);
-    const total = await PipelineOrder.countDocuments(filter);
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const [todayTotal, pendingCount, processingCount, shippedCount, deliveredCount] = await Promise.all([
+    const [total, todayTotal, statusCountsAgg, orders] = await Promise.all([
+      PipelineOrder.countDocuments(filter),
       PipelineOrder.countDocuments({ createdAt: { $gte: todayStart } }),
-      PipelineOrder.countDocuments({ status: 'Pending' }),
-      PipelineOrder.countDocuments({ status: 'Processing' }),
-      PipelineOrder.countDocuments({ status: 'Shipped' }),
-      PipelineOrder.countDocuments({ status: 'Delivered' }),
+      PipelineOrder.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+      PipelineOrder.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .lean(),
     ]);
 
-    const statusCountsAgg = await PipelineOrder.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } },
-    ]);
     const statusCounts = statusCountsAgg.reduce((acc, row) => {
       acc[row._id] = row.count;
       return acc;
     }, {});
 
-    const orders = await PipelineOrder.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(Number(limit))
-      .lean();
+    const pendingCount = statusCounts.Pending || 0;
+    const processingCount = statusCounts.Processing || 0;
+    const shippedCount = statusCounts.Shipped || 0;
+    const deliveredCount = statusCounts.Delivered || 0;
 
     return res.json({
       success: true,

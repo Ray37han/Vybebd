@@ -10,7 +10,7 @@
  * All tracking is fire-and-forget — it never blocks UI interactions.
  */
 
-import { createContext, useContext, useEffect, useRef, useCallback } from 'react';
+import { createContext, useContext, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useAuthStore } from '../store/index';
@@ -19,14 +19,16 @@ import ReactPixel from 'react-facebook-pixel';
 const AnalyticsContext = createContext(null);
 
 // Resolve API/socket URL robustly for production deploys.
-const FALLBACK_API_URL = 'https://vybe-backend-93eu.onrender.com/api';
+const PRODUCTION_API_URL = 'https://api.vybebd.store/api';
 
 function resolveApiBase() {
+  if (import.meta.env.PROD) {
+    return PRODUCTION_API_URL;
+  }
   const envUrl = (import.meta.env.VITE_API_URL || '').trim();
-
-  if (!envUrl || envUrl.startsWith('/')) return FALLBACK_API_URL;
-  if (envUrl.includes('vybebd.store')) return FALLBACK_API_URL;
-
+  if (!envUrl || envUrl.startsWith('/')) {
+    return 'http://localhost:5001/api';
+  }
   return envUrl;
 }
 
@@ -175,11 +177,11 @@ export function AnalyticsProvider({ children }) {
     });
   }, [user?._id]);
 
-  const value = {
+  const value = useMemo(() => ({
     sessionId: sessionId.current,
     socket: socketRef,
     trackEvent,
-  };
+  }), [trackEvent]);
 
   return (
     <AnalyticsContext.Provider value={value}>

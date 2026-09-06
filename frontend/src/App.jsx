@@ -6,39 +6,45 @@ import BackToTop from './components/BackToTop'
 import VybePageTransitions from './components/VybePageTransitions'
 import CheckoutSkeleton from './components/CheckoutSkeleton'
 import LoadingStore from './components/LoadingStore'
-import './components/PageTransitions.css'
-import Home from './pages/Home'
-import Products from './pages/Products'
-import ProductDetail from './pages/ProductDetail'
-import Customize from './pages/Customize'
-import Cart from './pages/Cart'
-import MyOrders from './pages/MyOrders'
-import Account from './pages/Account'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import PrivacyPolicy from './pages/PrivacyPolicy'
-import TermsOfService from './pages/TermsOfService'
-import NotFound from './pages/NotFound'
-
-// Lazy load checkout flow for better performance
-const Checkout = lazy(() => import('./pages/QuickCheckout'))
-const OrderSuccess = lazy(() => import('./pages/OrderConfirmed'))
-// Lazy load new category landing pages
-const HomeDecor = lazy(() => import('./pages/HomeDecor'))
-const SolarWobbler = lazy(() => import('./pages/SolarWobbler'))
-// Admin components - all lowercase 'admin' folder
-import AdminDashboard from './pages/admin/Dashboard'
-import AdminProducts from './pages/admin/Products'
-import AdminUsers from './pages/admin/Users'
-import AdminFeaturedPosters from './pages/admin/FeaturedPosters'
-import AdminHeroItems from './pages/admin/HeroItems'
-import AdminCustomOrders from './pages/admin/AdminCustomOrders'
-import AdminCustomApprovals from './pages/admin/CustomApprovals'
-import AdminBulkImport from './pages/admin/BulkImport'
-import AdminAnalytics from './pages/admin/Analytics'
-import DeliveryDashboard from './pages/admin/DeliveryDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AnalyticsProvider } from './context/AnalyticsContext'
+import './components/PageTransitions.css'
+
+// Critical storefront entry: static import for fastest initial paint
+import Home from './pages/Home'
+
+// Storefront secondary pages: lazy-loaded on demand
+const Products = lazy(() => import('./pages/Products'))
+const ProductDetail = lazy(() => import('./pages/ProductDetail'))
+const Customize = lazy(() => import('./pages/Customize'))
+const Cart = lazy(() => import('./pages/Cart'))
+const MyOrders = lazy(() => import('./pages/MyOrders'))
+const Account = lazy(() => import('./pages/Account'))
+const Login = lazy(() => import('./pages/Login'))
+const Register = lazy(() => import('./pages/Register'))
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
+const TermsOfService = lazy(() => import('./pages/TermsOfService'))
+const NotFound = lazy(() => import('./pages/NotFound'))
+
+// Dedicated category landing pages
+const HomeDecor = lazy(() => import('./pages/HomeDecor'))
+const SolarWobbler = lazy(() => import('./pages/SolarWobbler'))
+
+// Checkout flow: lazy loaded
+const Checkout = lazy(() => import('./pages/QuickCheckout'))
+const OrderSuccess = lazy(() => import('./pages/OrderConfirmed'))
+
+// Admin components: lazy loaded to isolate heavy dependencies (recharts, jspdf, html2canvas)
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'))
+const AdminProducts = lazy(() => import('./pages/admin/Products'))
+const AdminUsers = lazy(() => import('./pages/admin/Users'))
+const AdminFeaturedPosters = lazy(() => import('./pages/admin/FeaturedPosters'))
+const AdminHeroItems = lazy(() => import('./pages/admin/HeroItems'))
+const AdminCustomOrders = lazy(() => import('./pages/admin/AdminCustomOrders'))
+const AdminCustomApprovals = lazy(() => import('./pages/admin/CustomApprovals'))
+const AdminBulkImport = lazy(() => import('./pages/admin/BulkImport'))
+const AdminAnalytics = lazy(() => import('./pages/admin/Analytics'))
+const DeliveryDashboard = lazy(() => import('./pages/admin/DeliveryDashboard'))
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -87,116 +93,110 @@ function App() {
       <Navbar />
       <main className="flex-grow pt-16">
         <VybePageTransitions location={location}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/products/:id" element={<ProductDetail />} />
-            {/* New category landing pages */}
-            <Route path="/home-decor" element={
-              <Suspense fallback={<LoadingStore />}>
-                <HomeDecor />
-              </Suspense>
-            } />
-            <Route path="/solar-wobbler" element={
-              <Suspense fallback={<LoadingStore />}>
-                <SolarWobbler />
-              </Suspense>
-            } />
-            <Route path="/customize" element={<Customize />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/terms-of-service" element={<TermsOfService />} />
-            
-            {/* Protected Routes */}
-            {/* Checkout – no auth required, pipeline-based */}
-            <Route path="/checkout" element={
-              <Suspense fallback={<CheckoutSkeleton />}>
-                <Checkout />
-              </Suspense>
-            } />
-            <Route path="/quick-checkout" element={
-              <Suspense fallback={<CheckoutSkeleton />}>
-                <Checkout />
-              </Suspense>
-            } />
-            <Route path="/order-success" element={
-              <Suspense fallback={<CheckoutSkeleton />}>
-                <OrderSuccess />
-              </Suspense>
-            } />
-            <Route path="/order-confirmed" element={
-              <Suspense fallback={<CheckoutSkeleton />}>
-                <OrderSuccess />
-              </Suspense>
-            } />
+          <Suspense fallback={<LoadingStore text="Loading page..." />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/products" element={<Products />} />
+              <Route path="/products/:id" element={<ProductDetail />} />
+              {/* New category landing pages */}
+              <Route path="/home-decor" element={<HomeDecor />} />
+              <Route path="/solar-wobbler" element={<SolarWobbler />} />
+              <Route path="/customize" element={<Customize />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              
+              {/* Protected Routes */}
+              {/* Checkout – no auth required, pipeline-based */}
+              <Route path="/checkout" element={
+                <Suspense fallback={<CheckoutSkeleton />}>
+                  <Checkout />
+                </Suspense>
+              } />
+              <Route path="/quick-checkout" element={
+                <Suspense fallback={<CheckoutSkeleton />}>
+                  <Checkout />
+                </Suspense>
+              } />
+              <Route path="/order-success" element={
+                <Suspense fallback={<CheckoutSkeleton />}>
+                  <OrderSuccess />
+                </Suspense>
+              } />
+              <Route path="/order-confirmed" element={
+                <Suspense fallback={<CheckoutSkeleton />}>
+                  <OrderSuccess />
+                </Suspense>
+              } />
 
-            <Route path="/my-orders" element={
-              <ProtectedRoute>
-                <MyOrders />
-              </ProtectedRoute>
-            } />
-            <Route path="/account" element={
-              <ProtectedRoute>
-                <Account />
-              </ProtectedRoute>
-            } />
+              <Route path="/my-orders" element={
+                <ProtectedRoute>
+                  <MyOrders />
+                </ProtectedRoute>
+              } />
+              <Route path="/account" element={
+                <ProtectedRoute>
+                  <Account />
+                </ProtectedRoute>
+              } />
 
-            {/* Admin Routes */}
-            <Route path="/admin" element={
-              <ProtectedRoute adminOnly>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/products" element={
-              <ProtectedRoute adminOnly>
-                <AdminProducts />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/orders" element={
-              <ProtectedRoute adminOnly>
-                <DeliveryDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/users" element={
-              <ProtectedRoute adminOnly>
-                <AdminUsers />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/featured-posters" element={
-              <ProtectedRoute adminOnly>
-                <AdminFeaturedPosters />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/hero-items" element={
-              <ProtectedRoute adminOnly>
-                <AdminHeroItems />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/custom-orders" element={
-              <ProtectedRoute adminOnly>
-                <AdminCustomOrders />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/custom-approvals" element={
-              <ProtectedRoute adminOnly>
-                <AdminCustomApprovals />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/bulk-import" element={
-              <ProtectedRoute adminOnly>
-                <AdminBulkImport />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/analytics" element={
-              <ProtectedRoute adminOnly>
-                <AdminAnalytics />
-              </ProtectedRoute>
-            } />
-            {/* 404 Catch-all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              {/* Admin Routes */}
+              <Route path="/admin" element={
+                <ProtectedRoute adminOnly>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/products" element={
+                <ProtectedRoute adminOnly>
+                  <AdminProducts />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/orders" element={
+                <ProtectedRoute adminOnly>
+                  <DeliveryDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/users" element={
+                <ProtectedRoute adminOnly>
+                  <AdminUsers />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/featured-posters" element={
+                <ProtectedRoute adminOnly>
+                  <AdminFeaturedPosters />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/hero-items" element={
+                <ProtectedRoute adminOnly>
+                  <AdminHeroItems />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/custom-orders" element={
+                <ProtectedRoute adminOnly>
+                  <AdminCustomOrders />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/custom-approvals" element={
+                <ProtectedRoute adminOnly>
+                  <AdminCustomApprovals />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/bulk-import" element={
+                <ProtectedRoute adminOnly>
+                  <AdminBulkImport />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/analytics" element={
+                <ProtectedRoute adminOnly>
+                  <AdminAnalytics />
+                </ProtectedRoute>
+              } />
+              {/* 404 Catch-all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </VybePageTransitions>
       </main>
       <Footer />

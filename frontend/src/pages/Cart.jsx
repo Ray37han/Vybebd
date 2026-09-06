@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { FiTrash2, FiShoppingBag, FiTag } from 'react-icons/fi';
 import { useCartStore, useAuthStore } from '../store';
@@ -145,26 +145,37 @@ export default function Cart() {
     return variant?.originalPrice || item.product?.originalPrice || Math.round(price / 0.75);
   };
 
-  const subtotal = validItems.reduce((sum, item) => sum + getItemPrice(item) * (item.quantity || 1), 0);
-  const totalItems = validItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
-  
-  let bundleDiscountPercent = 0;
-  if (totalItems >= 10) bundleDiscountPercent = 15;
-  else if (totalItems >= 5) bundleDiscountPercent = 10;
-  else if (totalItems >= 2) bundleDiscountPercent = 5;
+  const { subtotal, totalItems, bundleDiscountPercent, bundleDiscountAmount, originalPrice, baseSavings, totalSavings, total } = useMemo(() => {
+    const sub = validItems.reduce((sum, item) => sum + getItemPrice(item) * (item.quantity || 1), 0);
+    const count = validItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    
+    let discountPercent = 0;
+    if (count >= 10) discountPercent = 15;
+    else if (count >= 5) discountPercent = 10;
+    else if (count >= 2) discountPercent = 5;
 
-  const bundleDiscountAmount = (subtotal * bundleDiscountPercent) / 100;
-  
-  const originalPrice = validItems.reduce(
-    (sum, item) => sum + getItemOriginalPrice(item) * (item.quantity || 1),
-    0
-  );
-  
-  // Base savings from "compare at" price
-  const baseSavings = originalPrice - subtotal;
-  const totalSavings = baseSavings + bundleDiscountAmount;
-  
-  const total = subtotal - bundleDiscountAmount;
+    const discountAmount = (sub * discountPercent) / 100;
+    
+    const origPrice = validItems.reduce(
+      (sum, item) => sum + getItemOriginalPrice(item) * (item.quantity || 1),
+      0
+    );
+    
+    const bSavings = origPrice - sub;
+    const tSavings = bSavings + discountAmount;
+    const finalTotal = sub - discountAmount;
+
+    return {
+      subtotal: sub,
+      totalItems: count,
+      bundleDiscountPercent: discountPercent,
+      bundleDiscountAmount: discountAmount,
+      originalPrice: origPrice,
+      baseSavings: bSavings,
+      totalSavings: tSavings,
+      total: finalTotal,
+    };
+  }, [validItems]);
 
   return (
     <>

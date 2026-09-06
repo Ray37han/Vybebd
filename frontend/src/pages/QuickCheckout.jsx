@@ -39,11 +39,9 @@ const PAYMENT_METHODS = [
 const BD_PHONE_RE = /^01[3-9]\d{8}$/;
 
 /* ─── Helper: get API base URL ───────────────────────────────────────────── */
-const API_BASE =
-  (import.meta.env.VITE_API_URL || '').trim() ||
-  (window.location.hostname === 'localhost'
-    ? 'http://localhost:5001/api'
-    : '/api');
+const API_BASE = import.meta.env.PROD
+  ? 'https://api.vybebd.store/api'
+  : ((import.meta.env.VITE_API_URL || '').trim() || 'http://localhost:5001/api');
 
 /* ─── Spinner component ───────────────────────────────────────────────────── */
 function Spinner() {

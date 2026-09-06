@@ -2,6 +2,7 @@ import express from 'express';
 import HeroItem from '../models/HeroItem.js';
 import Product from '../models/Product.js';
 import { protect, authorize } from '../middleware/auth.js';
+import { cacheMiddleware, invalidateCache } from '../middleware/cache.js';
 
 const router = express.Router();
 
@@ -30,7 +31,7 @@ router.get('/admin', protect, authorize('admin'), async (req, res) => {
 // @route   GET /api/hero-items
 // @desc    Get all active hero items
 // @access  Public
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware(120), async (req, res) => {
   try {
     const heroItems = await HeroItem.find({ isActive: true })
       .populate('product', 'name images category basePrice')
@@ -85,6 +86,7 @@ router.post('/', protect, authorize('admin'), async (req, res) => {
     const populatedItem = await HeroItem.findById(heroItem._id)
       .populate('product', 'name images category basePrice');
 
+    invalidateCache('cache:/api/hero-items*');
     res.status(201).json({
       success: true,
       data: populatedItem
@@ -140,6 +142,7 @@ router.put('/:id', protect, authorize('admin'), async (req, res) => {
     const updatedItem = await HeroItem.findById(heroItem._id)
       .populate('product', 'name images category basePrice');
 
+    invalidateCache('cache:/api/hero-items*');
     res.json({
       success: true,
       data: updatedItem
@@ -169,6 +172,7 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
 
     await heroItem.deleteOne();
 
+    invalidateCache('cache:/api/hero-items*');
     res.json({
       success: true,
       message: 'Hero item deleted successfully'

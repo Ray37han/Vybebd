@@ -25,6 +25,10 @@ export default defineConfig({
           'vendor-icons': ['react-icons'],
           // Firebase — only needed for auth pages
           'vendor-firebase': ['firebase/app', 'firebase/auth'],
+          // Charts — isolated, only loaded when admin analytics is visited
+          'vendor-charts': ['recharts'],
+          // PDF / canvas export — isolated, only loaded for invoice/label generation
+          'vendor-export': ['jspdf', 'html2canvas'],
         },
       }
     }

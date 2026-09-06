@@ -128,8 +128,17 @@ router.get('/', cacheMiddleware(CACHE_TTL), async (req, res) => {
           // Then sort by shuffleKey to randomize the order of subjects
           { $sort: { groupIndex: 1, shuffleKey: 1 } },
           { $skip: skip },
-          { $limit: limitNum },
-          { $project: { reviews: 0, groupIndex: 0, shuffleKey: 0 } }
+          { $project: {
+            reviews: 0,
+            description: 0,
+            faq: 0,
+            specifications: 0,
+            features: 0,
+            metadata: 0,
+            searchKeywords: 0,
+            groupIndex: 0,
+            shuffleKey: 0
+          } }
         ]),
         Product.countDocuments(query)
       ]);
@@ -149,12 +158,12 @@ router.get('/', cacheMiddleware(CACHE_TTL), async (req, res) => {
         }
       };
     } else {
-      // Use standard pagination helper
+      // Use standard pagination helper with optimized projection for product cards
       result = await paginate(Product, query, {
         page: pageNum,
         limit: limitNum,
         sort,
-        select: '-reviews',
+        select: '-reviews -description -faq -specifications -features -metadata -searchKeywords',
         lean: true
       });
     }
@@ -162,12 +171,10 @@ router.get('/', cacheMiddleware(CACHE_TTL), async (req, res) => {
     // Transform all product images to include watermarked URLs
     const transformedData = transformProductsImages(result.data);
 
-    // Return both legacy format and requested format for compatibility
+    // Return clean, compact response with backwards-compatible pagination metadata
     res.json({
       ...result,
       data: transformedData,
-      // Additional requested format fields
-      products: transformedData,
       page: result.pagination.currentPage,
       pages: result.pagination.totalPages,
       totalProducts: result.pagination.totalItems
@@ -271,7 +278,16 @@ router.get('/search/query', cacheMiddleware(CACHE_TTL), async (req, res) => {
           data: [
             { $skip: (pageNum - 1) * limitNum },
             { $limit: limitNum },
-            { $project: { reviews: 0, relevanceScore: 0 } },
+            { $project: {
+              reviews: 0,
+              description: 0,
+              faq: 0,
+              specifications: 0,
+              features: 0,
+              metadata: 0,
+              searchKeywords: 0,
+              relevanceScore: 0
+            } },
           ],
           totalCount: [
             { $count: 'count' },
@@ -292,7 +308,6 @@ router.get('/search/query', cacheMiddleware(CACHE_TTL), async (req, res) => {
     res.json({
       success: true,
       data: transformedData,
-      products: transformedData,
       pagination: {
         currentPage: pageNum,
         totalPages,

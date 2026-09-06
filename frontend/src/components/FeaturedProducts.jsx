@@ -40,7 +40,20 @@ export default function FeaturedProducts({ darkMode = false }) {
     return 25;
   };
 
-  if (loading) return <LoadingStore text="Loading trending drops" />;
+  if (loading) {
+    return (
+      <section className={`relative py-16 sm:py-24 overflow-hidden ${darkMode ? 'bg-[#060610]' : 'bg-[#f7f3ff]'}`}>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="h-8 w-40 rounded-full bg-purple-500/20 animate-pulse mb-8" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className={`rounded-2xl aspect-[3/4] animate-pulse ${darkMode ? 'bg-white/5' : 'bg-purple-100/50'}`} />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
   if (posters.length === 0) return null;
 
   return (

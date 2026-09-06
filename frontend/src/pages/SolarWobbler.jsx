@@ -23,8 +23,8 @@ import { productsAPI } from '../api';
 import { useCartStore } from '../store';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '../components/PageTransition';
 
-import solarWobblerMonkeyImg from '../components/images/SOLAR_WOBBLER_MONKEY.jpg';
-import solarWobblerBearImg from '../components/images/SOLAR_WOBBLER_BEAR.jpg';
+import solarWobblerMonkeyImg from '../components/images/SOLAR_WOBBLER_MONKEY.webp';
+import solarWobblerBearImg from '../components/images/SOLAR_WOBBLER_BEAR.webp';
 
 const HERO_WOBBLERS = [
   { id: 'monkey', name: 'Monkey Edition', image: solarWobblerMonkeyImg, badge: '🐒 Monkey Edition' },

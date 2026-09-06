@@ -716,7 +716,16 @@ export default function Products() {
 
             {/* Products Grid */}
             {loading ? (
-              <LoadingStore text="Finding perfect posters" />
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`rounded-2xl aspect-[3/4] animate-pulse ${
+                      darkMode ? 'bg-white/5 border border-white/10' : 'bg-purple-100/50 border border-purple-200/50'
+                    }`}
+                  />
+                ))}
+              </div>
             ) : products.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}

@@ -158,7 +158,7 @@ export const getHeroImageUrl = (publicId, options = {}) => {
           font_family: 'Arial',
           font_size: 40,
           font_weight: 'bold',
-          text: '© VYBE 2025',
+          text: '© VYBE',
         },
         color: '#FFFFFF',
         opacity: 50,

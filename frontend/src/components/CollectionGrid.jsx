@@ -1,20 +1,20 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-// Import optimized images
-import footballImg from './images/FOOTBALL.jpg';
-import carsImg from './images/CARS.jpg';
-import bikesImg from './images/BIKES.jpg';
-import f1Img from './images/F1.jpg';
-import seriesImg from './images/SERIES.jpg';
-import moviesImg from './images/MOVIES.jpg';
-import musicImg from './images/MUSIC.jpg';
-import gamesImg from './images/GAMES.jpg';
-import animeImg from './images/ANIME.jpg';
-import motivationalImg from './images/MOTIVATIONAL.jpg';
+// Import optimized images (modern WebP format)
+import footballImg from './images/FOOTBALL.webp';
+import carsImg from './images/CARS.webp';
+import bikesImg from './images/BIKES.webp';
+import f1Img from './images/F1.webp';
+import seriesImg from './images/SERIES.webp';
+import moviesImg from './images/MOVIES.webp';
+import musicImg from './images/MUSIC.webp';
+import gamesImg from './images/GAMES.webp';
+import animeImg from './images/ANIME.webp';
+import motivationalImg from './images/MOTIVATIONAL.webp';
 // New product lines
-import homeDecorImg from './images/HOME_DECOR.jpg';
-import solarWobblerImg from './images/SOLAR_WOBBLER.jpg';
+import homeDecorImg from './images/HOME_DECOR.webp';
+import solarWobblerImg from './images/SOLAR_WOBBLER.webp';
 
 /**
  * CollectionGrid Component - "Shop by Passion" Category Grid
@@ -187,7 +187,10 @@ export default function CollectionGrid({ darkMode = false }) {
                   <img
                     src={collection.image}
                     alt={collection.name}
+                    width="400"
+                    height="400"
                     loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
                   />
                 </div>

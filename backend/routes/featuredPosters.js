@@ -1,13 +1,14 @@
 import express from 'express';
 import FeaturedPoster from '../models/FeaturedPoster.js';
 import { protect, authorize } from '../middleware/auth.js';
+import { cacheMiddleware, invalidateCache } from '../middleware/cache.js';
 
 const router = express.Router();
 
 // @route   GET /api/featured-posters
 // @desc    Get all active featured posters (public)
 // @access  Public
-router.get('/', async (req, res) => {
+router.get('/', cacheMiddleware(120), async (req, res) => {
   try {
     const posters = await FeaturedPoster.find({ isActive: true })
       .populate('productId', 'name basePrice originalPrice images rating')
@@ -71,6 +72,7 @@ router.post('/', protect, authorize('admin'), async (req, res) => {
       isActive: isActive !== undefined ? isActive : true
     });
 
+    invalidateCache('cache:/api/featured-posters*');
     res.status(201).json(poster);
   } catch (error) {
     console.error('Error creating featured poster:', error);
@@ -104,6 +106,7 @@ router.put('/:id', protect, authorize('admin'), async (req, res) => {
 
     await poster.save();
 
+    invalidateCache('cache:/api/featured-posters*');
     res.json(poster);
   } catch (error) {
     console.error('Error updating featured poster:', error);
@@ -133,6 +136,7 @@ router.put('/reorder/bulk', protect, authorize('admin'), async (req, res) => {
       .sort({ order: 1 })
       .select('-__v');
 
+    invalidateCache('cache:/api/featured-posters*');
     res.json(updatedPosters);
   } catch (error) {
     console.error('Error reordering featured posters:', error);
@@ -153,6 +157,7 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
 
     await poster.deleteOne();
 
+    invalidateCache('cache:/api/featured-posters*');
     res.json({ message: 'Featured poster deleted successfully' });
   } catch (error) {
     console.error('Error deleting featured poster:', error);
