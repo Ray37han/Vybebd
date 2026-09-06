@@ -185,7 +185,7 @@ export default function Login() {
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
-              <h1 className="text-3xl font-bold text-center mb-2 dark:text-moon-silver">Welcome Back</h1>
+              <h1 className="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-moon-silver">Welcome Back</h1>
               <p className="text-gray-600 dark:text-moon-silver/70 text-center mb-8">Login to your account</p>
               
               <form onSubmit={handleLogin} className="space-y-4">

@@ -420,7 +420,7 @@ export default function ProductDetail() {
                   />
                 ))}
               </div>
-              <span className="ml-2 text-gray-600">
+              <span className={`ml-2 ${darkMode ? 'text-moon-silver/70' : 'text-gray-600'}`}>
                 {(product.rating?.average || 0).toFixed(1)} ({product.rating?.count || 0} reviews)
               </span>
             </div>
@@ -444,7 +444,7 @@ export default function ProductDetail() {
                 <>
                   <p className="text-4xl font-bold text-vybe-purple">৳{currentPrice}</p>
                   <div className="flex flex-col">
-                    <span className="text-2xl text-gray-400 line-through">৳{currentOriginalPrice}</span>
+                    <span className={`text-2xl line-through ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>৳{currentOriginalPrice}</span>
                     <span className="text-sm font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full">
                       25% OFF
                     </span>
@@ -484,8 +484,8 @@ export default function ProductDetail() {
             {/* Tier Selection — poster only */}
             {uiConfig.showTierSelector && (
             <div className="mb-6">
-              <label className="block text-sm font-semibold mb-3">Quality:</label>
-              <div className="relative flex rounded-xl bg-gray-100 p-1 gap-1">
+              <label className={`block text-sm font-semibold mb-3 ${darkMode ? 'text-moon-silver' : 'text-gray-900'}`}>Quality:</label>
+              <div className={`relative flex rounded-xl p-1 gap-1 ${darkMode ? 'bg-moon-night/60' : 'bg-gray-100'}`}>
                 {['Standard', 'Premium'].map((tier) => (
                   <motion.button
                     key={tier}
@@ -496,12 +496,14 @@ export default function ProductDetail() {
                     {selectedTier === tier && (
                       <motion.span
                         layoutId="tierHighlight"
-                        className="absolute inset-0 rounded-lg bg-white shadow-md"
+                        className={`absolute inset-0 rounded-lg shadow-md ${darkMode ? 'bg-moon-midnight' : 'bg-white'}`}
                         transition={{ type: 'spring', stiffness: 350, damping: 28 }}
                       />
                     )}
                     <span className={`relative z-10 transition-colors duration-200 ${
-                      selectedTier === tier ? 'text-vybe-purple' : 'text-gray-500'
+                      selectedTier === tier
+                        ? darkMode ? 'text-moon-gold' : 'text-vybe-purple'
+                        : darkMode ? 'text-moon-silver/60' : 'text-gray-500'
                     }`}>
                       {tier}
                     </span>
@@ -515,7 +517,7 @@ export default function ProductDetail() {
             {uiConfig.showSizeSelector && (
             <div className="mb-6">
               <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-semibold">{uiConfig.sizeLabel}: <span className="text-red-500">*</span></label>
+                <label className={`text-sm font-semibold ${darkMode ? 'text-moon-silver' : 'text-gray-900'}`}>{uiConfig.sizeLabel}: <span className="text-red-500">*</span></label>
                 {!selectedSize && (
                   <motion.span 
                     className="text-xs text-vybe-purple font-semibold flex items-center gap-1"
@@ -569,7 +571,9 @@ export default function ProductDetail() {
                           : 'border-vybe-purple bg-vybe-purple text-white shadow-lg'
                         : isPremium
                           ? 'border-orange-300 hover:shadow-md'
-                          : 'border-gray-300 hover:border-vybe-purple hover:shadow-md'
+                          : darkMode
+                            ? 'border-moon-gold/30 text-moon-silver hover:border-moon-gold hover:shadow-md'
+                            : 'border-gray-300 hover:border-vybe-purple hover:shadow-md'
                     }`}
                   >
                     {isPremium && (
@@ -585,12 +589,12 @@ export default function ProductDetail() {
                       </motion.span>
                     )}
                     <div className="flex flex-col items-start">
-                      <span className="font-semibold">{sizeVariant.name}</span>
+                      <span className={`font-semibold ${!isSelected && !isPremium && darkMode ? 'text-moon-silver' : ''}`}>{sizeVariant.name}</span>
                       <div className="flex items-center gap-2 text-sm">
-                        <span className={isSelected ? 'text-white font-bold' : isPremium ? 'text-orange-500 font-bold' : 'text-vybe-purple font-bold'}>
+                        <span className={isSelected ? 'text-white font-bold' : isPremium ? 'text-orange-500 font-bold' : darkMode ? 'text-moon-gold font-bold' : 'text-vybe-purple font-bold'}>
                           ৳{sizeVariant.price}
                         </span>
-                        <span className="text-xs line-through opacity-60">
+                        <span className={`text-xs line-through opacity-60 ${darkMode && !isSelected ? 'text-moon-silver/50' : ''}`}>
                           ৳{sizeVariant.originalPrice || Math.round(sizeVariant.price / 0.75)}
                         </span>
                       </div>
@@ -600,7 +604,7 @@ export default function ProductDetail() {
                 })}              </div>
               {!selectedSize && uiConfig.sizeHint && (
                 <motion.p 
-                  className="text-xs text-gray-500 mt-2 flex items-center gap-1"
+                  className={`text-xs mt-2 flex items-center gap-1 ${darkMode ? 'text-moon-silver/60' : 'text-gray-500'}`}
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
@@ -614,8 +618,8 @@ export default function ProductDetail() {
             {/* Frame Selection — poster only */}
             {uiConfig.showFrameSelector && (
             <div className="mb-6">
-              <label className="block text-sm font-semibold mb-3">
-                Choose Frame: <span className="text-xs text-gray-500">(Optional)</span>
+              <label className={`block text-sm font-semibold mb-3 ${darkMode ? 'text-moon-silver' : 'text-gray-900'}`}>
+                Choose Frame: <span className={`text-xs ${darkMode ? 'text-moon-silver/50' : 'text-gray-500'}`}>(Optional)</span>
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {[
@@ -655,7 +659,7 @@ export default function ProductDetail() {
                   </motion.button>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className={`text-xs mt-2 ${darkMode ? 'text-moon-silver/60' : 'text-gray-500'}`}>
                 {selectedFrame
                   ? (
                     <span className="flex items-center gap-1">
@@ -670,7 +674,7 @@ export default function ProductDetail() {
 
             {/* Quantity */}
             <div className="mb-6">
-              <label className="block text-sm font-semibold mb-2" id="qty-label">Quantity:</label>
+              <label className={`block text-sm font-semibold mb-2 ${darkMode ? 'text-moon-silver' : 'text-gray-900'}`} id="qty-label">Quantity:</label>
               <div className="flex items-center gap-3" role="group" aria-labelledby="qty-label">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -693,7 +697,7 @@ export default function ProductDetail() {
                     const val = parseInt(e.target.value) || 1;
                     setQuantity(Math.max(1, val));
                   }}
-                  className="w-20 h-12 text-center text-xl font-semibold border-2 border-gray-300 rounded-lg focus:border-vybe-purple focus:outline-none"
+                  className={`w-20 h-12 text-center text-xl font-semibold border-2 rounded-lg focus:outline-none ${darkMode ? 'bg-moon-midnight border-moon-gold/30 text-moon-silver focus:border-moon-gold' : 'bg-white border-gray-300 text-gray-900 focus:border-vybe-purple'}`}
                 />
                 <button
                   onClick={() => setQuantity(quantity + 1)}
