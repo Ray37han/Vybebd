@@ -23,6 +23,14 @@ import { productsAPI } from '../api';
 import { useCartStore } from '../store';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '../components/PageTransition';
 
+import solarWobblerMonkeyImg from '../components/images/SOLAR_WOBBLER_MONKEY.jpg';
+import solarWobblerBearImg from '../components/images/SOLAR_WOBBLER_BEAR.jpg';
+
+const HERO_WOBBLERS = [
+  { id: 'monkey', name: 'Monkey Edition', image: solarWobblerMonkeyImg, badge: '🐒 Monkey Edition' },
+  { id: 'bear', name: 'Sunny Bear Edition', image: solarWobblerBearImg, badge: '🐻 Sunny Bear' },
+];
+
 const HOW_IT_WORKS = [
   { step: '01', Icon: FiSun, color: 'from-yellow-500 to-amber-500', title: 'Place Near Light', desc: 'Set it by a window, under a lamp, or on your desk. Any light source works.' },
   { step: '02', Icon: FiRefreshCw, color: 'from-blue-500 to-indigo-500', title: 'Watch It Dance', desc: 'The solar cell captures light energy and powers a silent micro-motor. It starts wobbling in seconds.' },
@@ -143,8 +151,16 @@ export default function SolarWobbler() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [heroIndex, setHeroIndex] = useState(0);
   const navigate = useNavigate();
   useCartStore((state) => state.addItem);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % HERO_WOBBLERS.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const handleThemeChange = () => setDarkMode(localStorage.getItem('theme') === 'dark');
@@ -301,51 +317,76 @@ export default function SolarWobbler() {
                 </div>
               </motion.div>
 
-              {/* Hero Visual — CSS orbital ring + animated sun icon */}
+              {/* Hero Visual — Authentic Solar Wobbler Showcase with Real Photos */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
+                initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-                className="relative hidden lg:flex items-center justify-center"
-                style={{ minHeight: '400px' }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+                className="relative hidden lg:flex flex-col items-center justify-center"
               >
-                {/* Glow blob */}
-                <div className="absolute w-64 h-64 bg-yellow-400/20 rounded-full blur-3xl" />
-                {/* Slow dashed orbit ring */}
+                {/* Radiant Solar Glow Behind */}
+                <div className="absolute w-80 h-80 bg-gradient-to-tr from-yellow-400/30 via-orange-400/25 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+                {/* Model switcher tabs above the photo */}
+                <div className="flex items-center gap-2 mb-4 relative z-20">
+                  {HERO_WOBBLERS.map((w, idx) => (
+                    <button
+                      key={w.id}
+                      type="button"
+                      onClick={() => setHeroIndex(idx)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                        heroIndex === idx
+                          ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-md shadow-orange-500/30 scale-105'
+                          : dm
+                            ? 'bg-moon-space/60 text-moon-silver border border-moon-silver/20 hover:text-white'
+                            : 'bg-white/80 text-gray-700 border border-gray-200 hover:text-gray-950'
+                      }`}
+                    >
+                      <span>{w.badge}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Primary Wobbler Card with Kinetic Sway */}
                 <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-                  className="absolute w-72 h-72 rounded-full border border-dashed border-yellow-400/30"
-                />
-                {/* Fast solid inner ring */}
-                <motion.div
-                  animate={{ rotate: -360 }}
-                  transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
-                  className="absolute w-48 h-48 rounded-full border border-yellow-300/20"
-                />
-                {/* Central sun icon */}
-                <motion.div
-                  animate={{ scale: [1, 1.08, 1], opacity: [0.9, 1, 0.9] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                  className="relative z-10"
+                  key={`hero-card-${HERO_WOBBLERS[heroIndex].id}`}
+                  animate={{
+                    rotate: [-3, 3, -3],
+                    y: [-5, 5, -5],
+                  }}
+                  transition={{
+                    rotate: { duration: 3.2, repeat: Infinity, ease: 'easeInOut' },
+                    y: { duration: 3.2, repeat: Infinity, ease: 'easeInOut' },
+                  }}
+                  className={`relative w-72 h-[410px] rounded-3xl p-2.5 shadow-2xl overflow-hidden transition-all ${
+                    dm
+                      ? 'bg-gradient-to-b from-white/15 to-white/5 border-2 border-yellow-400/50 shadow-yellow-500/20'
+                      : 'bg-white/90 border-2 border-yellow-400 shadow-xl shadow-yellow-500/25'
+                  }`}
                 >
-                  <div className="w-36 h-36 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-2xl shadow-yellow-500/50">
-                    <FiSun className="w-20 h-20 text-white" strokeWidth={1.5} />
+                  <div className="relative w-full h-full rounded-2xl overflow-hidden bg-zinc-950">
+                    <img
+                      src={HERO_WOBBLERS[heroIndex].image}
+                      alt={HERO_WOBBLERS[heroIndex].name}
+                      className="w-full h-full object-cover object-center"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30 pointer-events-none" />
+
+                    {/* Top live badge */}
+                    <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md border border-yellow-400/40 rounded-full px-3 py-1 flex items-center gap-1.5 text-xs text-yellow-300 font-bold shadow-md">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>Natural Window Light</span>
+                    </div>
+
+                    {/* Bottom label */}
+                    <div className="absolute bottom-3 inset-x-3 text-center">
+                      <span className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-black uppercase tracking-wider mb-1">
+                        {HERO_WOBBLERS[heroIndex].name}
+                      </span>
+                      <p className="text-[11px] text-white/90">Sitting on book · 100% Real Photo</p>
+                    </div>
                   </div>
                 </motion.div>
-                {/* Orbiting dots */}
-                {[0, 60, 120, 180, 240, 300].map((deg) => (
-                  <motion.div
-                    key={deg}
-                    className="absolute w-3 h-3 rounded-full bg-yellow-400"
-                    style={{
-                      left: `calc(50% + ${Math.cos((deg * Math.PI) / 180) * 140}px)`,
-                      top: `calc(50% + ${Math.sin((deg * Math.PI) / 180) * 140}px)`,
-                    }}
-                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: deg / 300 }}
-                  />
-                ))}
               </motion.div>
             </div>
           </div>

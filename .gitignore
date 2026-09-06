@@ -6,10 +6,21 @@ package-lock.json
 .env
 .env.local
 .env.production
-# Server env files
+.env.*
+*.env*
 backend/.env
+frontend/.env
+frontend/.env.local
+frontend/.env.network
+frontend/.env.save
+frontend/.env.vercel
 # Allow frontend production env (only public VITE_API_URL - no secrets)
 !frontend/.env.production
+!.env.template
+
+# Sensitive documentation & local context
+MASTER_CONTEXT.md
+*MASTER_CONTEXT*
 
 # Build outputs
 dist/
