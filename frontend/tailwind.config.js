@@ -26,6 +26,7 @@ export default {
         },
         moon: {
           night: '#0a0e27',
+          space: '#0f1629',
           midnight: '#151b36',
           blue: '#1e293b',
           silver: '#cbd5e1',

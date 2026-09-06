@@ -266,7 +266,7 @@ export default function ProductDetail() {
 
 
   return (
-    <div className={`pt-24 pb-12 min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gradient-to-b from-moon-midnight to-moon-space' : 'bg-white'}`}>
+    <div className={`pt-24 pb-12 min-h-screen transition-colors duration-300 ${darkMode ? 'bg-moon-night' : 'bg-white'}`}>
       <Helmet>
         <title>{isWobbler ? `${product.name} | Solar Wobbler Bangladesh | VYBE` : isHomeDecor ? `${product.name} | Home Decor Bangladesh | VYBE` : `${product.name} | Buy Poster Online Bangladesh | VYBE`}</title>
         <meta name="description" content={productDesc} />
