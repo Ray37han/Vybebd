@@ -1,895 +1,814 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FiShoppingCart, FiUser, FiMenu, FiX, FiLogOut, FiPackage, FiHome, FiEdit, FiMoon, FiSun, FiChevronDown, FiSearch } from 'react-icons/fi';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FiShoppingCart, FiUser, FiMenu, FiX, FiLogOut, FiPackage, FiMoon, FiSun, FiSearch, FiChevronDown, FiEdit } from 'react-icons/fi';
 import { useAuthStore, useCartStore } from '../store';
 import { authAPI, productsAPI } from '../api';
-import { CartButton, MenuButton } from '../components/AnimatedIcon';
-import { usePageLoad } from '../hooks/usePageLoad';
 import toast from 'react-hot-toast';
 
-// Main 10 poster categories + new product lines
-const categories = [
-  { value: 'football', label: 'Football', icon: '⚽' },
-  { value: 'cars', label: 'Cars', icon: '🚗' },
-  { value: 'bikes', label: 'Bikes', icon: '🏍️' },
-  { value: 'f1', label: 'F1', icon: '🏁' },
-  { value: 'tv-series', label: 'Series', icon: '📺' },
-  { value: 'movies', label: 'Movies', icon: '🎬' },
-  { value: 'music', label: 'Music', icon: '🎵' },
-  { value: 'games', label: 'Games', icon: '🎮' },
-  { value: 'anime', label: 'Anime', icon: '⚡' },
-  { value: 'motivational', label: 'Motivational', icon: '💪' },
-  // ── divider ──
-  { divider: true },
-  // ── New product lines ──
-  { value: 'home-decor', label: 'Home Decor', icon: '🏠', link: '/home-decor' },
-  { value: 'solar-wobbler', label: 'Solar Wobbler', icon: '☀️', link: '/solar-wobbler' },
+// ─── Category images (same as CollectionGrid / Shop by Passion) ───────────────
+import footballImg    from './images/FOOTBALL.webp';
+import carsImg        from './images/CARS.webp';
+import bikesImg       from './images/BIKES.webp';
+import f1Img          from './images/F1.webp';
+import seriesImg      from './images/SERIES.webp';
+import moviesImg      from './images/MOVIES.webp';
+import musicImg       from './images/MUSIC.webp';
+import gamesImg       from './images/GAMES.webp';
+import animeImg       from './images/ANIME.webp';
+import motivationalImg from './images/MOTIVATIONAL.webp';
+import homeDecorImg   from './images/HOME_DECOR.webp';
+import solarWobblerImg from './images/SOLAR_WOBBLER.webp';
+import geminiImg       from './images/gemini.webp';
+
+// ─── Category data with images ────────────────────────────────────────────────
+const CATEGORY_GROUPS = [
+  {
+    group: 'Sports',
+    items: [
+      { value: 'football',    label: 'Football',     img: footballImg,     tagline: 'Icons of the beautiful game' },
+      { value: 'f1',          label: 'Formula 1',    img: f1Img,           tagline: 'Speed legends & racing icons' },
+      { value: 'bikes',       label: 'Bikes',         img: bikesImg,       tagline: 'Ride the wall art' },
+    ],
+  },
+  {
+    group: 'Culture',
+    items: [
+      { value: 'anime',       label: 'Anime',         img: animeImg,       tagline: 'Unleash your inner otaku' },
+      { value: 'games',       label: 'Gaming',         img: gamesImg,      tagline: 'Level up your room' },
+      { value: 'movies',      label: 'Movies',         img: moviesImg,     tagline: 'Cinema on your wall' },
+      { value: 'tv-series',   label: 'TV Series',      img: seriesImg,     tagline: 'Your favourite shows' },
+      { value: 'music',       label: 'Music',          img: musicImg,      tagline: 'Feel the beat every day' },
+    ],
+  },
+  {
+    group: 'Style',
+    items: [
+      { value: 'cars',          label: 'Cars',           img: carsImg,         tagline: 'Dream machines on walls' },
+      { value: 'motivational',  label: 'Motivational',   img: motivationalImg, tagline: 'Fuel your hustle' },
+    ],
+  },
 ];
 
+const FEATURED_COLLECTIONS = [
+  {
+    label: 'Solar Wobbler',
+    link: '/solar-wobbler',
+    img: solarWobblerImg,
+    badge: '✨ Kinetic Art',
+    badgeColor: 'amber',
+    desc: 'Light-powered perpetual companion',
+  },
+  {
+    label: 'Home Decor',
+    link: '/home-decor',
+    img: homeDecorImg,
+    badge: '🖼️ Wall Decor',
+    badgeColor: 'purple',
+    desc: 'Frames, canvas & room styling',
+  },
+  {
+    label: 'Custom Poster',
+    link: '/customize',
+    img: geminiImg,
+    badge: '🎨 Make It Yours',
+    badgeColor: 'pink',
+    desc: 'Upload design & print custom vibe',
+  },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const cleanName = (name = '') =>
+  name
+    .replace(/\s*\|\|\s*#\d+/g, '')
+    .replace(/\s*#\d+$/g, '')
+    .replace(/\s*\(\d+\)$/g, '')
+    .replace(/\s*-\s*\d+$/g, '')
+    .replace(/^\d+\.\s*/g, '')
+    .trim();
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function NavbarOptimized() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [productsDropdownOpen, setProductsDropdownOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [mobileOpen, setMobileOpen]       = useState(false);
+  const [shopOpen, setShopOpen]           = useState(false);
+  const [userMenuOpen, setUserMenuOpen]   = useState(false);
+  const [darkMode, setDarkMode]           = useState(false);
+  const [scrolled, setScrolled]           = useState(false);
+  const [hoveredItem, setHoveredItem]     = useState(null);  // tracks hovered category item
+
+  // Search
+  const [searchQuery, setSearchQuery]         = useState('');
+  const [suggestions, setSuggestions]         = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef     = useRef(null);
+  const searchTimer   = useRef(null);
+  const shopRef       = useRef(null);
+  const userMenuRef   = useRef(null);
+  const shopTimer     = useRef(null); // delay close to avoid flicker
+
   const { isAuthenticated, user, logout } = useAuthStore();
-  const itemCount = useCartStore((state) => state.getItemCount());
-  const navigate = useNavigate();
-  
-  // CRITICAL: Wait for page load before animating
-  const isLoaded = usePageLoad(500);
+  const itemCount = useCartStore(s => s.getItemCount());
+  const navigate  = useNavigate();
+  const location  = useLocation();
 
-  // ── Search state ──
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchSuggestions, setSearchSuggestions] = useState([]);
-  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const searchTimerRef = useRef(null);
-  const searchRef = useRef(null);
-  const mobileSearchRef = useRef(null);
-
-  // Close search dropdown when clicking outside
+  /* ── Scroll shadow ── */
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (searchRef.current && !searchRef.current.contains(event.target) &&
-          mobileSearchRef.current && !mobileSearchRef.current.contains(event.target)) {
-        setShowSearchSuggestions(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Debounced search suggestions from server
-  const fetchSuggestions = useCallback((query) => {
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    if (!query || query.trim().length < 2) {
-      setSearchSuggestions([]);
-      setShowSearchSuggestions(false);
-      return;
-    }
-    searchTimerRef.current = setTimeout(async () => {
-      try {
-        const res = await productsAPI.searchSuggestions(query.trim());
-        setSearchSuggestions(res.data || []);
-        setShowSearchSuggestions(true);
-      } catch {
-        setShowSearchSuggestions(false);
-      }
-    }, 250);
+  /* ── Close on route change ── */
+  useEffect(() => {
+    setMobileOpen(false);
+    setShopOpen(false);
+    setUserMenuOpen(false);
+  }, [location.pathname]);
+
+  /* ── Click-outside handlers ── */
+  useEffect(() => {
+    const handler = e => {
+      if (shopRef.current && !shopRef.current.contains(e.target)) setShopOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleSearchSubmit = (q) => {
-    const term = (q || searchQuery).trim();
-    if (!term) return;
-    setShowSearchSuggestions(false);
-    setSearchQuery('');
-    setMobileSearchOpen(false);
-    setMobileMenuOpen(false);
-    navigate(`/products?search=${encodeURIComponent(term)}`);
-  };
-
-  const handleSuggestionClick = (product) => {
-    setShowSearchSuggestions(false);
-    setSearchQuery('');
-    setMobileSearchOpen(false);
-    setMobileMenuOpen(false);
-    navigate(`/products/${product._id}`);
-  };
-
-  const cleanProductName = (name) => {
-    if (!name) return '';
-    return name
-      .replace(/\s*\|\|\s*#\d+/g, '')
-      .replace(/\s*#\d+$/g, '')
-      .replace(/\s*\(\d+\)$/g, '')
-      .replace(/\s*-\s*\d+$/g, '')
-      .replace(/^\d+\.\s*/g, '')
-      .trim();
-  };
-
-  // Theme management
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const isDark = savedTheme === 'dark';
-    
-    if (savedTheme) {
+    const handler = e => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = e => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSuggestions(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  /* ── Theme init ── */
+  useEffect(() => {
+    const applyTheme = isDark => {
       setDarkMode(isDark);
-      if (isDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    } else {
-      // Check system preference and use it as default
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const systemTheme = prefersDark ? 'dark' : 'light';
-      localStorage.setItem('theme', systemTheme);
-      setDarkMode(prefersDark);
-      if (prefersDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    }
-
-    const handleStorageChange = () => {
-      const theme = localStorage.getItem('theme');
-      if (theme) {
-        const isDarkTheme = theme === 'dark';
-        setDarkMode(isDarkTheme);
-        if (isDarkTheme) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      }
+      document.documentElement.classList.toggle('dark', isDark);
     };
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(saved ? saved === 'dark' : prefersDark);
 
-    // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleSystemThemeChange = (e) => {
-      // Only auto-update if user hasn't manually set a preference
-      const savedTheme = localStorage.getItem('theme');
-      if (!savedTheme) {
-        const prefersDark = e.matches;
-        setDarkMode(prefersDark);
-        localStorage.setItem('theme', prefersDark ? 'dark' : 'light');
-        if (prefersDark) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-        window.dispatchEvent(new Event('themeChange'));
-      }
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onSystem = e => { if (!localStorage.getItem('theme')) applyTheme(e.matches); };
+    const onStorage = () => {
+      const t = localStorage.getItem('theme');
+      if (t) applyTheme(t === 'dark');
     };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('themeChange', handleStorageChange);
-    mediaQuery.addEventListener('change', handleSystemThemeChange);
-    
+    mq.addEventListener('change', onSystem);
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('themeChange', onStorage);
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('themeChange', handleStorageChange);
-      mediaQuery.removeEventListener('change', handleSystemThemeChange);
+      mq.removeEventListener('change', onSystem);
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('themeChange', onStorage);
     };
   }, []);
 
   const toggleTheme = () => {
-    const newTheme = !darkMode;
-    setDarkMode(newTheme);
-    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
-    
-    if (newTheme) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    
+    const next = !darkMode;
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+    setDarkMode(next);
+    document.documentElement.classList.toggle('dark', next);
     window.dispatchEvent(new Event('themeChange'));
   };
 
+  /* ── Logout ── */
   const handleLogout = async () => {
-    try {
-      await authAPI.logout();
-      logout();
-      toast.success('Logged out successfully');
-      navigate('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    try { await authAPI.logout(); logout(); toast.success('Logged out'); navigate('/'); } catch {}
   };
 
-  return (
-    <nav 
-      className={`fixed top-0 left-0 right-0 z-50 border-b shadow-2xl transition-colors duration-500 gpu-safe ${
-        darkMode 
-          ? 'blur-safe dark blur-safe-desktop border-moon-gold/20' 
-          : 'blur-safe blur-safe-desktop border-purple-200'
-      }`}
-      style={{
-        transform: 'translate3d(0, 0, 0)',
-        WebkitTransform: 'translate3d(0, 0, 0)',
-        willChange: 'transform',
-      }}
-    >
-      {/* Glow Effect */}
-      <div className={`absolute inset-0 pointer-events-none ${
-        darkMode 
-          ? 'bg-gradient-to-r from-moon-mystical/5 via-moon-gold/5 to-moon-mystical/5'
-          : 'bg-gradient-to-r from-purple-100/5 via-blue-100/5 to-pink-100/5'
-      }`}></div>
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo - Self-Drawing SVG Animation */}
-          <Link to="/" className="flex items-center space-x-3">
-            <div 
-              className={`relative py-2 ${!isLoaded ? 'navbar-hidden' : 'navbar-logo-enter'}`}
-            >
-              {/* Snowfall effect container */}
-              <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ width: '200px', height: '60px' }}>
-                {[...Array(8)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`absolute opacity-60 ${darkMode ? 'text-white' : 'text-purple-600'}`}
-                    style={{
-                      left: `${15 + i * 25}%`,
-                      fontSize: `${8 + Math.random() * 6}px`,
-                      animation: `snowfall ${3 + Math.random() * 2}s linear ${i * 0.3}s infinite`,
-                      animationDelay: `${i * 0.4}s`
-                    }}
-                  >
-                    ❄
-                  </div>
-                ))}
-              </div>
-              
-              <svg
-                width="200"
-                height="60"
-                viewBox="0 0 200 60"
-                className="overflow-visible relative z-10"
-                style={{ transform: 'translateZ(0)', willChange: 'transform' }}
-              >
-                <defs>
-                  {/* Gradient for the text */}
-                  <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" style={{ stopColor: darkMode ? '#8B5CF6' : '#9333EA', stopOpacity: 1 }} />
-                    <stop offset="100%" style={{ stopColor: darkMode ? '#A78BFA' : '#C084FC', stopOpacity: 1 }} />
-                  </linearGradient>
-                  
-                  {/* Glow filter */}
-                  <filter id="glow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
+  /* ── Search ── */
+  const fetchSuggestions = useCallback(q => {
+    clearTimeout(searchTimer.current);
+    if (!q || q.trim().length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const res = await productsAPI.searchSuggestions(q.trim());
+        setSuggestions(res.data || []);
+        setShowSuggestions(true);
+      } catch { setShowSuggestions(false); }
+    }, 250);
+  }, []);
 
-                {/* Self-drawing text paths */}
-                <text
-                  x="10"
-                  y="45"
-                  fontSize="48"
-                  fontWeight="900"
-                  fontFamily="'Fredoka', 'Nunito', 'Poppins', sans-serif"
-                  fill="none"
-                  stroke="url(#logoGradient)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  filter="url(#glow)"
-                  className={isLoaded ? 'logo-draw' : ''}
-                  style={{
-                    strokeDasharray: 400,
-                    strokeDashoffset: isLoaded ? 0 : 400,
-                    animation: isLoaded ? 'drawLogo 2s ease-out forwards' : 'none',
-                    paintOrder: 'stroke fill'
-                  }}
-                >
-                  VYBE
-                </text>
-                
-                {/* Filled text (appears after stroke animation) */}
-                <text
-                  x="10"
-                  y="45"
-                  fontSize="48"
-                  fontWeight="900"
-                  fontFamily="'Fredoka', 'Nunito', 'Poppins', sans-serif"
-                  fill={darkMode ? '#FFFFFF' : '#111827'}
-                  style={{
-                    opacity: isLoaded ? 1 : 0,
-                    animation: isLoaded ? 'fadeInFill 0.5s ease-out 1.8s forwards' : 'none',
-                  }}
-                >
-                  VYBE
-                </text>
-              </svg>
-            </div>
+  const submitSearch = q => {
+    const term = (q || searchQuery).trim();
+    if (!term) return;
+    setShowSuggestions(false); setSearchQuery(''); setMobileOpen(false);
+    navigate(`/products?search=${encodeURIComponent(term)}`);
+  };
+
+  /* ── Shop hover with slight delay to avoid flicker ── */
+  const openShop = () => {
+    clearTimeout(shopTimer.current);
+    setShopOpen(true);
+  };
+  const closeShop = () => {
+    shopTimer.current = setTimeout(() => setShopOpen(false), 120);
+  };
+
+  const dk = darkMode;
+
+  // Nav bar background — starts transparent, frosted glass on scroll
+  const navBg = scrolled
+    ? dk
+      ? 'bg-[#0B0B10]/90 backdrop-blur-2xl border-white/[0.07] shadow-[0_1px_0_rgba(255,255,255,0.07)]'
+      : 'bg-white/90 backdrop-blur-2xl border-black/[0.08] shadow-[0_1px_0_rgba(0,0,0,0.07)]'
+    : dk
+      ? 'bg-[#0B0B10]/50 backdrop-blur-md border-transparent'
+      : 'bg-white/60 backdrop-blur-md border-transparent';
+
+  // Preview item: defaults to first category in first group
+  const allItems = CATEGORY_GROUPS.flatMap(g => g.items);
+  const previewItem = hoveredItem || allItems[0];
+
+  return (
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${navBg}`}
+      role="navigation"
+      aria-label="Main navigation"
+    >
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-[52px] md:h-[60px]">
+
+          {/* ── Logo ── */}
+          <Link to="/" className="flex-shrink-0 select-none" aria-label="VYBE home">
+            <span
+              className="font-heading font-black text-[1.65rem] tracking-tight leading-none"
+              style={{ letterSpacing: '-0.02em' }}
+            >
+              <span className={dk ? 'text-white' : 'text-[#0B0B10]'}>VY</span>
+              <span className="text-[#8B5CF6]">BE</span>
+            </span>
           </Link>
 
-          {/* Desktop Navigation - Staggered CSS Animation */}
-          <div className={`hidden md:flex items-center space-x-1 ${!isLoaded ? 'navbar-hidden' : ''}`}>
-            <div className={isLoaded ? 'navbar-item-enter' : ''}>
-              <NavLink to="/" icon={FiHome} darkMode={darkMode}>Home</NavLink>
-            </div>
-            
-            {/* Products Dropdown */}
-            <div 
-              className={`relative ${isLoaded ? 'navbar-item-enter' : ''}`}
-              onMouseEnter={() => setProductsDropdownOpen(true)}
-              onMouseLeave={() => setProductsDropdownOpen(false)}
+          {/* ── Desktop nav links ── */}
+          <nav className="hidden md:flex items-center" aria-label="Primary">
+            {/* Shop with mega-dropdown */}
+            <div
+              ref={shopRef}
+              className="relative"
+              onMouseEnter={openShop}
+              onMouseLeave={closeShop}
             >
               <button
                 onClick={() => navigate('/products')}
-                className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl transition-all duration-300 ease-out border font-semibold text-sm group relative overflow-hidden active:scale-95 ${
-                  darkMode
-                    ? 'bg-moon-midnight/50 hover:bg-moon-blue/50 text-moon-silver hover:text-moon-gold border-moon-gold/20 hover:border-moon-gold/50'
-                    : 'bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-800 border-purple-200 hover:border-purple-400'
-                }`}
-                style={{
-                  transform: 'translateZ(0)',
-                  willChange: 'transform',
-                }}
+                aria-expanded={shopOpen}
+                aria-haspopup="true"
+                className={`apple-nav-link ${dk ? 'apple-nav-link--dark' : 'apple-nav-link--light'}`}
               >
-                <FiPackage className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300 ease-out" />
-                <span>Shop</span>
-                <FiChevronDown 
-                  className={`w-4 h-4 transition-transform duration-300 ${productsDropdownOpen ? 'rotate-180' : ''}`} 
+                Shop
+                <FiChevronDown
+                  className="w-3 h-3 ml-0.5 opacity-60 transition-transform duration-200"
+                  style={{ transform: shopOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
                 />
               </button>
 
-              {/* Dropdown Menu - Only animate after page load */}
-              {isLoaded && (
-                <AnimatePresence>
-                  {productsDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className={`absolute top-full left-0 mt-2 w-64 rounded-2xl shadow-2xl border overflow-hidden z-50 gpu-safe ${
-                        darkMode
-                          ? 'blur-safe dark blur-safe-desktop border-moon-gold/30'
-                          : 'blur-safe blur-safe-desktop border-purple-200'
-                      }`}
-                      style={{
-                        transform: 'translate3d(0, 0, 0)',
-                        WebkitTransform: 'translate3d(0, 0, 0)',
-                        willChange: 'transform',
-                      }}
-                    >
-                      <div className={`px-4 py-3 border-b ${
-                        darkMode ? 'border-moon-gold/20' : 'border-purple-200'
-                      }`}>
-                        <p className={`text-xs font-bold uppercase tracking-wider ${
-                          darkMode ? 'text-moon-gold' : 'text-purple-600'
-                        }`}>
-                          Browse Categories
+              {/* ── Mega dropdown ── */}
+              <div
+                className={`
+                  absolute top-full left-1/2 -translate-x-1/2 mt-[13px]
+                  w-[720px] rounded-2xl overflow-hidden
+                  border transition-all duration-[220ms] ease-out origin-top
+                  shadow-[0_24px_64px_rgba(0,0,0,0.32)]
+                  ${shopOpen
+                    ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
+                    : 'opacity-0 scale-[0.97] -translate-y-2 pointer-events-none'
+                  }
+                  ${dk
+                    ? 'bg-[#111117] border-white/[0.1]'
+                    : 'bg-[#FAFAFA] border-black/[0.08]'
+                  }
+                `}
+                role="menu"
+                aria-label="Shop categories"
+                onMouseEnter={openShop}
+                onMouseLeave={closeShop}
+              >
+                {/* ── Upper: Categories Grid + Live Category Preview ── */}
+                <div className="flex">
+                  {/* Left: Category columns */}
+                  <div className="flex-1 p-5 pr-4">
+                    {CATEGORY_GROUPS.map(group => (
+                      <div key={group.group} className="mb-4 last:mb-0">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#8B5CF6] mb-2">
+                          {group.group}
                         </p>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                          {group.items.map(cat => (
+                            <button
+                              key={cat.value}
+                              role="menuitem"
+                              onMouseEnter={() => setHoveredItem(cat)}
+                              onMouseLeave={() => setHoveredItem(null)}
+                              onClick={() => { navigate(`/products?category=${cat.value}`); setShopOpen(false); }}
+                              className={`
+                                group text-left py-1.5 px-2.5 rounded-lg text-[13px] font-medium
+                                transition-all duration-150 flex items-center gap-2.5
+                                ${dk
+                                  ? 'text-[#B0ACBE] hover:text-white hover:bg-white/[0.07]'
+                                  : 'text-[#424245] hover:text-[#0B0B10] hover:bg-black/[0.05]'
+                                }
+                              `}
+                            >
+                              {/* Thumbnail */}
+                              <span
+                                className="w-7 h-7 rounded-md overflow-hidden flex-shrink-0 bg-white/5"
+                                style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}
+                              >
+                                <img
+                                  src={cat.img}
+                                  alt={cat.label}
+                                  loading="lazy"
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                />
+                              </span>
+                              <span>{cat.label}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
+                    ))}
+
+                    {/* "View all" link */}
+                    <button
+                      onClick={() => { navigate('/products'); setShopOpen(false); }}
+                      className={`mt-2.5 text-[12px] font-semibold transition-colors flex items-center gap-1 ${dk ? 'text-[#8B5CF6] hover:text-[#a78bfa]' : 'text-[#8B5CF6] hover:text-[#7c3aed]'}`}
+                    >
+                      <span>View all poster collections</span>
+                      <span>→</span>
+                    </button>
+                  </div>
+
+                  {/* Right: Large preview card */}
+                  <div
+                    className={`w-56 flex-shrink-0 border-l relative overflow-hidden flex flex-col justify-end ${dk ? 'border-white/[0.08] bg-[#0c0b11]' : 'border-black/[0.06] bg-[#f5f5f7]'}`}
+                    style={{ minHeight: '290px' }}
+                  >
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                      {/* Preview image with crossfade */}
+                      {allItems.map(item => (
+                        <img
+                          key={item.value}
+                          src={item.img}
+                          alt={item.label}
+                          loading="lazy"
+                          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+                          style={{ opacity: previewItem?.value === item.value ? 1 : 0 }}
+                        />
+                      ))}
+                      {/* Overlay gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
+                    </div>
+
+                    {/* Label & CTA */}
+                    <div className="relative z-10 p-4">
+                      <p className="text-white font-bold text-[15px] leading-tight drop-shadow">{previewItem?.label}</p>
+                      <p className="text-white/80 text-[11px] mt-0.5 leading-tight drop-shadow">{previewItem?.tagline}</p>
+                      <button
+                        onClick={() => { navigate(`/products?category=${previewItem?.value}`); setShopOpen(false); }}
+                        className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-bold text-[#A78BFA] hover:text-white transition-colors"
+                      >
+                        Shop {previewItem?.label} →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── High-Visibility Showcase: Home Decor & Solar Wobbler & Custom Poster ── */}
+                <div className={`border-t px-4 py-3.5 ${
+                  dk ? 'border-white/[0.08] bg-[#0A0910]' : 'border-black/[0.06] bg-[#f9f8fa]'
+                }`}>
+                  <div className="flex items-center justify-between mb-2 px-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8B5CF6]">
+                      Special Collections
+                    </span>
+                    <span className={`text-[11px] font-medium ${dk ? 'text-white/45' : 'text-gray-500'}`}>
+                      Original Creations &amp; Decor
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {FEATURED_COLLECTIONS.map(item => {
+                      const isAmber = item.badgeColor === 'amber';
+                      const isPurple = item.badgeColor === 'purple';
                       
-                      <div className="py-2">
-                        {categories.map((category, idx) => {
-                          // Render divider
-                          if (category.divider) {
-                            return (
-                              <div key={`divider-${idx}`} className={`mx-4 my-1 border-t ${darkMode ? 'border-moon-gold/20' : 'border-purple-100'}`} />
-                            );
-                          }
-                          // Use custom link if provided (for new product lines), else filter query
-                          const destination = category.link
-                            ? category.link
-                            : `/products?category=${category.value}`;
-                          return (
-                          <button
-                            key={category.value}
-                            onClick={() => {
-                              navigate(destination);
-                              setProductsDropdownOpen(false);
-                            }}
-                            className={`w-full text-left px-6 py-3 text-sm font-medium transition-colors ${
-                              darkMode
-                                ? 'text-moon-silver hover:bg-moon-blue/30 hover:text-moon-gold'
-                                : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'
-                            }`}
-                          >
-                            <span className="mr-3 text-base">{category.icon}</span>
-                            {category.label}
-                          </button>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              )}
+                      const cardTheme = dk
+                        ? isAmber
+                          ? 'border-amber-500/35 bg-amber-500/[0.08] hover:border-amber-400 hover:bg-amber-500/[0.15]'
+                          : isPurple
+                          ? 'border-purple-500/35 bg-purple-500/[0.08] hover:border-purple-400 hover:bg-purple-500/[0.15]'
+                          : 'border-pink-500/35 bg-pink-500/[0.08] hover:border-pink-400 hover:bg-pink-500/[0.15]'
+                        : isAmber
+                        ? 'border-amber-300 bg-amber-50/90 hover:border-amber-500 hover:bg-amber-100'
+                        : isPurple
+                        ? 'border-purple-300 bg-purple-50/90 hover:border-purple-500 hover:bg-purple-100'
+                        : 'border-pink-300 bg-pink-50/90 hover:border-pink-500 hover:bg-pink-100';
+
+                      const badgeStyle = isAmber
+                        ? 'bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                        : isPurple
+                        ? 'bg-purple-500/25 text-purple-700 dark:text-purple-300 border border-purple-500/30'
+                        : 'bg-pink-500/25 text-pink-700 dark:text-pink-300 border border-pink-500/30';
+
+                      return (
+                        <Link
+                          key={item.label}
+                          to={item.link}
+                          onClick={() => setShopOpen(false)}
+                          className={`group flex items-center gap-3 p-2.5 rounded-xl border transition-all duration-200 ${cardTheme}`}
+                        >
+                          <div className="w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-black/10 shadow-sm border border-black/5 dark:border-white/10">
+                            <img
+                              src={item.img}
+                              alt={item.label}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              loading="lazy"
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-[13px] font-bold truncate ${dk ? 'text-white' : 'text-gray-900'}`}>
+                                {item.label}
+                              </span>
+                            </div>
+                            <div className="mt-0.5">
+                              <span className={`inline-block text-[9.5px] font-bold px-1.5 py-0.2 rounded-full leading-tight ${badgeStyle}`}>
+                                {item.badge}
+                              </span>
+                            </div>
+                            <p className={`text-[10.5px] truncate mt-1 ${dk ? 'text-white/70' : 'text-gray-600'}`}>
+                              {item.desc}
+                            </p>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Search Bar — Desktop */}
-            <div className={`relative ${isLoaded ? 'navbar-item-enter' : ''}`} ref={searchRef}>
-              <div className="relative">
-                <FiSearch className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-colors ${
-                  darkMode ? 'text-moon-gold/60' : 'text-purple-400'
-                }`} />
+            <NavItem to="/products"      dk={dk}>All Posters</NavItem>
+            <NavItem to="/customize"     dk={dk}>Customize</NavItem>
+            <NavItem to="/solar-wobbler" dk={dk}>Solar Wobbler</NavItem>
+            {isAuthenticated && user?.role === 'admin' && (
+              <NavItem to="/admin" dk={dk}>Admin</NavItem>
+            )}
+          </nav>
+
+          {/* ── Right: Search, Cart, User, Theme ── */}
+          <div className="hidden md:flex items-center gap-1.5">
+
+            {/* Search */}
+            <div className="relative" ref={searchRef}>
+              <div className={`
+                flex items-center gap-2 px-3 py-2 rounded-full border text-[13px]
+                transition-all duration-200
+                focus-within:ring-2 focus-within:ring-[#8B5CF6]/30 focus-within:border-[#8B5CF6]/50
+                ${dk
+                  ? 'bg-white/[0.06] border-white/[0.1] text-white'
+                  : 'bg-black/[0.04] border-black/[0.08] text-[#0B0B10]'
+                }
+              `}>
+                <FiSearch className="w-3.5 h-3.5 flex-shrink-0 opacity-40" />
                 <input
-                  type="text"
+                  type="search"
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    fetchSuggestions(e.target.value);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSearchSubmit();
-                    if (e.key === 'Escape') {
-                      setShowSearchSuggestions(false);
-                      e.target.blur();
-                    }
-                  }}
-                  onFocus={() => searchQuery.length >= 2 && searchSuggestions.length > 0 && setShowSearchSuggestions(true)}
-                  placeholder="Search VYBE..."
-                  className={`w-40 lg:w-52 pl-9 pr-8 py-2 text-sm rounded-xl border transition-all duration-300 focus:outline-none focus:ring-2 ${
-                    darkMode
-                      ? 'bg-moon-midnight/50 border-moon-gold/20 text-moon-silver placeholder-moon-silver/40 focus:border-moon-gold focus:ring-moon-gold/20'
-                      : 'bg-white border-purple-200 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:ring-purple-200'
-                  }`}
-                  style={{ transform: 'translateZ(0)', willChange: 'transform' }}
+                  onChange={e => { setSearchQuery(e.target.value); fetchSuggestions(e.target.value); }}
+                  onKeyDown={e => { if (e.key === 'Enter') submitSearch(); if (e.key === 'Escape') setShowSuggestions(false); }}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  placeholder="Search VYBE…"
+                  aria-label="Search products"
+                  aria-autocomplete="list"
+                  className="bg-transparent outline-none w-32 lg:w-44 placeholder:opacity-40"
                 />
                 {searchQuery && (
-                  <button
-                    onClick={() => { setSearchQuery(''); setSearchSuggestions([]); setShowSearchSuggestions(false); }}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded transition-colors ${
-                      darkMode ? 'hover:bg-moon-gold/20 text-moon-gold/60' : 'hover:bg-purple-100 text-purple-400'
-                    }`}
-                  >
-                    <FiX className="w-3.5 h-3.5" />
+                  <button onClick={() => { setSearchQuery(''); setSuggestions([]); setShowSuggestions(false); }} aria-label="Clear">
+                    <FiX className="w-3.5 h-3.5 opacity-40 hover:opacity-80 transition-opacity" />
                   </button>
                 )}
               </div>
 
-              {/* Suggestions Dropdown */}
-              {showSearchSuggestions && searchSuggestions.length > 0 && (
-                <div className={`absolute top-full left-0 right-0 mt-2 rounded-xl shadow-2xl border overflow-hidden z-[100] gpu-safe ${
-                  darkMode
-                    ? 'bg-moon-midnight/95 border-moon-gold/30'
-                    : 'bg-white border-purple-200'
-                }`} style={{ minWidth: '280px' }}>
-                  <div className="max-h-80 overflow-y-auto">
-                    {searchSuggestions.map((product) => (
+              {showSuggestions && suggestions.length > 0 && (
+                <div className={`absolute top-full left-0 mt-2 rounded-xl shadow-2xl border overflow-hidden z-[100] min-w-[280px] ${
+                  dk ? 'bg-[#111117] border-white/[0.08]' : 'bg-white border-black/[0.08]'
+                }`}>
+                  <div className="max-h-72 overflow-y-auto">
+                    {suggestions.map(p => (
                       <button
-                        key={product._id}
-                        onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(product); }}
+                        key={p._id}
+                        onMouseDown={e => { e.preventDefault(); setShowSuggestions(false); setSearchQuery(''); navigate(`/products/${p._id}`); }}
                         className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors ${
-                          darkMode ? 'hover:bg-moon-gold/10 text-moon-silver' : 'hover:bg-purple-50 text-gray-700'
+                          dk ? 'hover:bg-white/[0.05] text-[#B0ACBE]' : 'hover:bg-black/[0.04] text-[#424245]'
                         }`}
                       >
-                        {product.thumbnail && (
-                          <img src={product.thumbnail} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" loading="lazy" />
-                        )}
+                        {p.thumbnail && <img src={p.thumbnail} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" loading="lazy" />}
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">{cleanProductName(product.name)}</div>
-                          <div className={`text-xs ${darkMode ? 'text-moon-silver/50' : 'text-gray-400'}`}>{product.category}</div>
+                          <div className="text-[13px] font-medium truncate">{cleanName(p.name)}</div>
+                          <div className={`text-[11px] ${dk ? 'text-[#6B6B7A]' : 'text-[#86868B]'}`}>{p.category}</div>
                         </div>
-                        {product.basePrice && (
-                          <span className={`text-sm font-bold flex-shrink-0 ${darkMode ? 'text-moon-gold' : 'text-purple-600'}`}>৳{product.basePrice}</span>
-                        )}
+                        {p.basePrice && <span className="text-[13px] font-semibold text-[#8B5CF6] flex-shrink-0">৳{p.basePrice}</span>}
                       </button>
                     ))}
                   </div>
-                  {/* View All Results */}
                   <button
-                    onMouseDown={(e) => { e.preventDefault(); handleSearchSubmit(); }}
-                    className={`w-full text-center py-2.5 text-xs font-bold uppercase tracking-wider border-t transition-colors ${
-                      darkMode
-                        ? 'border-moon-gold/20 text-moon-gold hover:bg-moon-gold/10'
-                        : 'border-purple-200 text-purple-600 hover:bg-purple-50'
+                    onMouseDown={e => { e.preventDefault(); submitSearch(); }}
+                    className={`w-full py-2.5 text-[11px] font-semibold uppercase tracking-wider border-t transition-colors ${
+                      dk ? 'border-white/[0.06] text-[#8B5CF6] hover:bg-white/[0.04]' : 'border-black/[0.06] text-[#8B5CF6] hover:bg-black/[0.02]'
                     }`}
                   >
-                    View All Results →
+                    View all results →
                   </button>
                 </div>
               )}
             </div>
 
-            <div className={isLoaded ? 'navbar-item-enter' : ''}>
-              <NavLink to="/customize" icon={FiEdit} darkMode={darkMode}>Customize</NavLink>
-            </div>
+            {/* Cart */}
+            <Link
+              to="/cart"
+              aria-label={`Cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}
+              className={`nav-icon-btn ${dk ? 'nav-icon-btn--dark' : 'nav-icon-btn--light'}`}
+            >
+              <FiShoppingCart className="w-[18px] h-[18px]" />
+              {itemCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#8B5CF6] text-white text-[10px] font-bold flex items-center justify-center">
+                  {itemCount > 9 ? '9+' : itemCount}
+                </span>
+              )}
+            </Link>
 
-            {/* Admin Link - Only for admins */}
-            {isAuthenticated && user?.role === 'admin' && (
-              <div className={isLoaded ? 'navbar-item-enter' : ''}>
-                <NavLink to="/admin" icon={FiUser} darkMode={darkMode}>Admin</NavLink>
-              </div>
-            )}
-
-            {/* Cart Button */}
-            <div className={isLoaded ? 'navbar-item-enter' : ''}>
-              <Link 
-                to="/cart" 
-                aria-label="Cart"
-                title="Cart"
-                className={`relative h-10 w-10 inline-flex items-center justify-center leading-none p-2 rounded-xl transition-all duration-300 border active:scale-95 transform-gpu will-change-transform ${
-                  darkMode
-                    ? 'bg-moon-midnight/50 hover:bg-moon-blue/50 text-moon-silver border-moon-gold/20 hover:border-moon-gold/50'
-                    : 'bg-purple-50 hover:bg-purple-100 text-purple-600 border-purple-200 hover:border-purple-400'
-                }`}
-              >
-                <FiShoppingCart className="w-4 h-4" />
-                {itemCount > 0 && isLoaded && (
-                  <span className={`pointer-events-none absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold navbar-cart-badge ${
-                    darkMode
-                      ? 'bg-moon-gold text-moon-night'
-                      : 'bg-purple-600 text-white'
-                  }`}>
-                    {itemCount > 9 ? '9+' : itemCount}
-                  </span>
-                )}
-              </Link>
-            </div>
-
-            {/* User Menu */}
-            <div className={isLoaded ? 'navbar-item-enter' : ''}>
+            {/* User */}
+            <div className="relative" ref={userMenuRef}>
               {isAuthenticated ? (
-                <div className="relative group">
-                  <button className={`h-10 w-10 inline-flex items-center justify-center leading-none p-2 rounded-xl transition-all duration-300 border active:scale-95 ${
-                    darkMode
-                      ? 'bg-moon-midnight/50 hover:bg-moon-blue/50 text-moon-silver border-moon-gold/20 hover:border-moon-gold/50'
-                      : 'bg-purple-50 hover:bg-purple-100 text-purple-600 border-purple-200 hover:border-purple-400'
-                  }`}
-                  style={{
-                    transform: 'translateZ(0)',
-                    willChange: 'transform',
-                  }}>
-                    <FiUser className="w-4 h-4" />
+                <>
+                  <button
+                    onClick={() => setUserMenuOpen(v => !v)}
+                    aria-label="Account menu"
+                    aria-expanded={userMenuOpen}
+                    className={`nav-icon-btn ${dk ? 'nav-icon-btn--dark' : 'nav-icon-btn--light'}`}
+                  >
+                    <FiUser className="w-[18px] h-[18px]" />
                   </button>
-                  
-                  {isLoaded && (
-                    <div className={`absolute right-0 mt-2 w-48 rounded-xl shadow-xl border overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ${
-                      darkMode
-                        ? 'bg-moon-midnight/95 border-moon-gold/30'
-                        : 'bg-white border-purple-200'
-                    }`}>
-                      <div className={`px-4 py-3 border-b ${
-                        darkMode ? 'border-moon-gold/20' : 'border-purple-200'
-                      }`}>
-                        <p className={`text-sm font-semibold ${
-                          darkMode ? 'text-moon-gold' : 'text-purple-600'
-                        }`}>
-                          {user?.name || 'User'}
-                        </p>
-                        <p className={`text-xs ${
-                          darkMode ? 'text-moon-silver' : 'text-gray-500'
-                        }`}>
-                          {user?.email}
-                        </p>
-                      </div>
-                      
-                      <Link
-                        to="/account"
-                        className={`block px-4 py-2 text-sm transition-colors ${
-                          darkMode
-                            ? 'text-moon-silver hover:bg-moon-blue/30 hover:text-moon-gold'
-                            : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'
-                        }`}
-                      >
-                        <FiUser className="inline w-4 h-4 mr-2" />
-                        My Account
-                      </Link>
-                      
-                      <Link
-                        to="/my-orders"
-                        className={`block px-4 py-2 text-sm transition-colors ${
-                          darkMode
-                            ? 'text-moon-silver hover:bg-moon-blue/30 hover:text-moon-gold'
-                            : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'
-                        }`}
-                      >
-                        <FiPackage className="inline w-4 h-4 mr-2" />
-                        My Orders
-                      </Link>
-                      
+
+                  <div className={`
+                    absolute right-0 mt-2 w-52 rounded-2xl shadow-2xl border overflow-hidden
+                    transition-all duration-150 ease-out origin-top-right
+                    ${userMenuOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}
+                    ${dk ? 'bg-[#111117] border-white/[0.08]' : 'bg-white border-black/[0.08]'}
+                  `}>
+                    <div className={`px-4 py-3.5 border-b ${dk ? 'border-white/[0.06]' : 'border-black/[0.06]'}`}>
+                      <p className={`text-[13px] font-semibold ${dk ? 'text-white' : 'text-[#0B0B10]'}`}>{user?.name || 'Account'}</p>
+                      <p className={`text-[11px] truncate mt-0.5 ${dk ? 'text-[#6B6B7A]' : 'text-[#86868B]'}`}>{user?.email}</p>
+                    </div>
+                    <div className="py-1.5">
+                      <DropdownItem to="/account" onClick={() => setUserMenuOpen(false)} dk={dk} icon={<FiUser />}>My Account</DropdownItem>
+                      <DropdownItem to="/my-orders" onClick={() => setUserMenuOpen(false)} dk={dk} icon={<FiPackage />}>My Orders</DropdownItem>
+                    </div>
+                    <div className={`border-t py-1.5 ${dk ? 'border-white/[0.06]' : 'border-black/[0.06]'}`}>
                       <button
-                        onClick={handleLogout}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                          darkMode
-                            ? 'text-red-400 hover:bg-red-500/20'
-                            : 'text-red-600 hover:bg-red-50'
+                        onClick={() => { handleLogout(); setUserMenuOpen(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-[13px] transition-colors ${
+                          dk ? 'text-red-400 hover:bg-red-500/10' : 'text-red-600 hover:bg-red-50'
                         }`}
                       >
-                        <FiLogOut className="inline w-4 h-4 mr-2" />
-                        Logout
+                        <FiLogOut className="w-4 h-4" /> Sign Out
                       </button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                </>
               ) : (
                 <Link
                   to="/login"
-                  className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 border active:scale-95 ${
-                    darkMode
-                      ? 'bg-moon-gold text-moon-night border-moon-gold hover:bg-moon-gold/90'
-                      : 'bg-purple-600 text-white border-purple-600 hover:bg-purple-700'
-                  }`}
-                  style={{
-                    transform: 'translateZ(0)',
-                    willChange: 'transform',
-                  }}
+                  className="px-4 py-2 rounded-full text-[13px] font-semibold bg-[#8B5CF6] text-white hover:bg-[#7C3AED] transition-colors"
                 >
-                  Login
+                  Sign In
                 </Link>
               )}
             </div>
 
-            {/* Theme Toggle - Desktop */}
-            <div className={isLoaded ? 'navbar-item-enter' : ''}>
-              <button
-                onClick={toggleTheme}
-                className={`h-10 w-10 inline-flex items-center justify-center leading-none p-2 rounded-xl transition-all duration-300 border active:scale-95 ${
-                  darkMode
-                    ? 'bg-moon-midnight/50 hover:bg-moon-blue/50 text-moon-gold border-moon-gold/20 hover:border-moon-gold/50'
-                    : 'bg-purple-50 hover:bg-purple-100 text-purple-600 border-purple-200 hover:border-purple-400'
-                }`}
-                style={{
-                  transform: 'translateZ(0)',
-                  willChange: 'transform',
-                }}
-                aria-label="Toggle theme"
-                title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {darkMode ? <FiSun className="w-4 h-4" /> : <FiMoon className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Menu Button & Theme Toggle - CSS Animation */}
-          <div className={`md:hidden flex items-center gap-2 ${!isLoaded ? 'navbar-hidden' : 'navbar-menu-button'}`}>
-            {/* Theme Toggle - 44px min touch target */}
+            {/* Theme */}
             <button
               onClick={toggleTheme}
-              className={`min-w-[44px] min-h-[44px] p-2.5 rounded-xl transition-all duration-300 border active:scale-95 ${
-                darkMode
-                  ? 'bg-moon-midnight/50 hover:bg-moon-blue/50 text-moon-gold border-moon-gold/20 hover:border-moon-gold/50'
-                  : 'bg-purple-50 hover:bg-purple-100 text-purple-600 border-purple-200 hover:border-purple-400'
-              }`}
-              style={{
-                transform: 'translateZ(0)',
-                willChange: 'transform',
-              }}
-              aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={dk ? 'Switch to light' : 'Switch to dark'}
+              className={`nav-icon-btn ${dk ? 'nav-icon-btn--dark' : 'nav-icon-btn--light'}`}
             >
-              {darkMode ? <FiSun className="w-5 h-5" /> : <FiMoon className="w-5 h-5" />}
+              {dk ? <FiSun className="w-[17px] h-[17px]" /> : <FiMoon className="w-[17px] h-[17px]" />}
             </button>
+          </div>
 
-            {/* Mobile Menu Button - 44px min touch target with clear hamburger lines */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`min-w-[44px] min-h-[44px] p-2.5 rounded-xl transition-all duration-300 border active:scale-95 ${
-                darkMode
-                  ? 'bg-moon-midnight/50 text-moon-silver border-moon-gold/20'
-                  : 'bg-purple-50 text-purple-600 border-purple-200'
-              }`}
-              style={{
-                transform: 'translateZ(0)',
-                willChange: 'transform',
-              }}
-              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={mobileMenuOpen}
+          {/* ── Mobile right ── */}
+          <div className="md:hidden flex items-center gap-1">
+            <Link
+              to="/cart"
+              aria-label={`Cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}
+              className={`relative p-2.5 rounded-full transition-colors ${dk ? 'text-[#B0ACBE] hover:text-white' : 'text-[#424245]'}`}
             >
-              {mobileMenuOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
+              <FiShoppingCart className="w-5 h-5" />
+              {itemCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#8B5CF6] text-white text-[10px] font-bold flex items-center justify-center">
+                  {itemCount > 9 ? '9+' : itemCount}
+                </span>
+              )}
+            </Link>
+            <button
+              onClick={() => setMobileOpen(v => !v)}
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileOpen}
+              className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-colors ${
+                dk ? 'text-[#B0ACBE] hover:bg-white/[0.08]' : 'text-[#424245] hover:bg-black/[0.06]'
+              }`}
+            >
+              <span className="relative w-5 h-4 flex flex-col justify-between">
+                <span className={`block h-0.5 rounded-full transition-all duration-300 ${dk ? 'bg-white' : 'bg-[#0B0B10]'} ${mobileOpen ? 'rotate-45 translate-y-[7px]' : ''}`} />
+                <span className={`block h-0.5 rounded-full transition-all duration-300 ${dk ? 'bg-white' : 'bg-[#0B0B10]'} ${mobileOpen ? 'opacity-0 scale-x-0' : ''}`} />
+                <span className={`block h-0.5 rounded-full transition-all duration-300 ${dk ? 'bg-white' : 'bg-[#0B0B10]'} ${mobileOpen ? '-rotate-45 -translate-y-[9px]' : ''}`} />
+              </span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu - Only render after page load */}
-      {isLoaded && (
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              className={`md:hidden border-t ${
-                darkMode ? 'bg-moon-midnight border-moon-gold/20' : 'bg-white border-purple-200'
+      {/* ── Mobile menu ── */}
+      <div
+        className={`md:hidden overflow-hidden transition-all duration-300 ease-out ${
+          mobileOpen ? 'max-h-[100vh] opacity-100' : 'max-h-0 opacity-0'
+        } ${dk ? 'bg-[#0B0B10] border-t border-white/[0.06]' : 'bg-white border-t border-black/[0.06]'}`}
+        aria-hidden={!mobileOpen}
+      >
+        <div className="px-5 py-5 space-y-0.5">
+          {/* Mobile search */}
+          <div className="relative mb-5">
+            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 opacity-35 pointer-events-none" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); fetchSuggestions(e.target.value); }}
+              onKeyDown={e => { if (e.key === 'Enter') submitSearch(); }}
+              placeholder="Search products…"
+              aria-label="Search"
+              className={`w-full pl-10 pr-4 py-3 min-h-[48px] rounded-xl text-[14px] outline-none border transition-colors ${
+                dk
+                  ? 'bg-white/[0.06] border-white/[0.1] text-white placeholder:text-white/30'
+                  : 'bg-black/[0.04] border-black/[0.08] text-[#0B0B10] placeholder:text-black/30'
+              }`}
+            />
+          </div>
+
+          <MobileItem to="/" dk={dk} onClick={() => setMobileOpen(false)}>Home</MobileItem>
+          <MobileItem to="/products" dk={dk} onClick={() => setMobileOpen(false)}>All Posters</MobileItem>
+
+          {/* Mobile shop accordion */}
+          <div>
+            <button
+              onClick={() => setShopOpen(v => !v)}
+              className={`w-full flex items-center justify-between py-3 min-h-[48px] text-[15px] font-medium transition-colors ${
+                dk ? 'text-[#B0ACBE] hover:text-white' : 'text-[#424245] hover:text-[#0B0B10]'
               }`}
             >
-              <div className="px-4 py-4 space-y-2">
-                {/* Mobile Search Bar */}
-                <div className="relative mb-2" ref={mobileSearchRef}>
-                  <FiSearch className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${
-                    darkMode ? 'text-moon-gold/60' : 'text-purple-400'
-                  }`} />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      fetchSuggestions(e.target.value);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSearchSubmit();
-                    }}
-                    onFocus={() => searchQuery.length >= 2 && searchSuggestions.length > 0 && setShowSearchSuggestions(true)}
-                    placeholder="Search by name, category..."
-                    className={`w-full pl-9 pr-9 py-3 min-h-[48px] text-sm rounded-xl border transition-all focus:outline-none focus:ring-2 ${
-                      darkMode
-                        ? 'bg-moon-night/50 border-moon-gold/20 text-moon-silver placeholder-moon-silver/40 focus:border-moon-gold focus:ring-moon-gold/20'
-                        : 'bg-white border-purple-200 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:ring-purple-200'
+              Browse Categories
+              <FiChevronDown className={`w-4 h-4 transition-transform duration-200 ${shopOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <div className={`overflow-hidden transition-all duration-250 ${shopOpen ? 'max-h-[750px]' : 'max-h-0'}`}>
+              {/* Special collections */}
+              <div className="pt-2 pb-3 space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#8B5CF6] px-1">
+                  Special Collections
+                </p>
+                {FEATURED_COLLECTIONS.map(item => (
+                  <Link
+                    key={item.label}
+                    to={item.link}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-3 p-2 rounded-xl border transition-all ${
+                      dk ? 'bg-white/[0.04] border-white/10 text-white' : 'bg-black/[0.02] border-black/10 text-gray-900'
                     }`}
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => { setSearchQuery(''); setSearchSuggestions([]); setShowSearchSuggestions(false); }}
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded transition-colors ${
-                        darkMode ? 'hover:bg-moon-gold/20 text-moon-gold/60' : 'hover:bg-purple-100 text-purple-400'
-                      }`}
-                    >
-                      <FiX className="w-4 h-4" />
-                    </button>
-                  )}
-
-                  {/* Mobile Suggestions Dropdown */}
-                  {showSearchSuggestions && searchSuggestions.length > 0 && (
-                    <div className={`absolute top-full left-0 right-0 mt-1 rounded-xl shadow-2xl border overflow-hidden z-[100] ${
-                      darkMode
-                        ? 'bg-moon-midnight border-moon-gold/30'
-                        : 'bg-white border-purple-200'
-                    }`}>
-                      <div className="max-h-60 overflow-y-auto">
-                        {searchSuggestions.map((product) => (
-                          <button
-                            key={product._id}
-                            onMouseDown={(e) => { e.preventDefault(); handleSuggestionClick(product); }}
-                            className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors ${
-                              darkMode ? 'hover:bg-moon-gold/10 text-moon-silver' : 'hover:bg-purple-50 text-gray-700'
-                            }`}
-                          >
-                            {product.thumbnail && (
-                              <img src={product.thumbnail} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" loading="lazy" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium truncate">{cleanProductName(product.name)}</div>
-                              <div className={`text-xs ${darkMode ? 'text-moon-silver/50' : 'text-gray-400'}`}>{product.category}</div>
-                            </div>
-                            {product.basePrice && (
-                              <span className={`text-sm font-bold flex-shrink-0 ${darkMode ? 'text-moon-gold' : 'text-purple-600'}`}>৳{product.basePrice}</span>
-                            )}
-                          </button>
-                        ))}
+                  >
+                    <img src={item.img} alt={item.label} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-[13px]">{item.label}</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-500/20 text-[#8B5CF6]">
+                          {item.badge}
+                        </span>
                       </div>
-                      <button
-                        onMouseDown={(e) => { e.preventDefault(); handleSearchSubmit(); }}
-                        className={`w-full text-center py-2.5 text-xs font-bold uppercase tracking-wider border-t transition-colors ${
-                          darkMode
-                            ? 'border-moon-gold/20 text-moon-gold hover:bg-moon-gold/10'
-                            : 'border-purple-200 text-purple-600 hover:bg-purple-50'
-                        }`}
-                      >
-                        View All Results →
-                      </button>
+                      <p className={`text-[11px] truncate mt-0.5 ${dk ? 'text-white/60' : 'text-gray-500'}`}>{item.desc}</p>
                     </div>
-                  )}
-                </div>
-
-                <MobileNavLink to="/" icon={FiHome} darkMode={darkMode} onClick={() => setMobileMenuOpen(false)}>
-                  Home
-                </MobileNavLink>
-                <MobileNavLink to="/products" icon={FiPackage} darkMode={darkMode} onClick={() => setMobileMenuOpen(false)}>
-                  Shop
-                </MobileNavLink>
-                <MobileNavLink to="/customize" icon={FiEdit} darkMode={darkMode} onClick={() => setMobileMenuOpen(false)}>
-                  Customize
-                </MobileNavLink>
-                <MobileNavLink to="/cart" icon={FiShoppingCart} darkMode={darkMode} onClick={() => setMobileMenuOpen(false)} badge={itemCount}>
-                  Cart
-                </MobileNavLink>
-                
-                <div className={`pt-2 mt-2 border-t ${darkMode ? 'border-moon-gold/20' : 'border-purple-200'}`}>
-                  {isAuthenticated ? (
-                    <>
-                      <MobileNavLink to="/account" icon={FiUser} darkMode={darkMode} onClick={() => setMobileMenuOpen(false)}>
-                        My Account
-                      </MobileNavLink>
-                      <MobileNavLink to="/my-orders" icon={FiPackage} darkMode={darkMode} onClick={() => setMobileMenuOpen(false)}>
-                        My Orders
-                      </MobileNavLink>
-                      {user?.role === 'admin' && (
-                        <MobileNavLink to="/admin" icon={FiUser} darkMode={darkMode} onClick={() => setMobileMenuOpen(false)}>
-                          👑 Admin Panel
-                        </MobileNavLink>
-                      )}
-                      <button
-                        onClick={() => {
-                          handleLogout();
-                          setMobileMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${
-                          darkMode
-                            ? 'text-red-400 hover:bg-red-500/20'
-                            : 'text-red-600 hover:bg-red-50'
-                        }`}
-                      >
-                        <FiLogOut className="w-5 h-5" />
-                        <span className="font-medium">Logout</span>
-                      </button>
-                    </>
-                  ) : (
-                    <MobileNavLink to="/login" icon={FiUser} darkMode={darkMode} onClick={() => setMobileMenuOpen(false)}>
-                      Login
-                    </MobileNavLink>
-                  )}
-                </div>
-
-                <button
-                  onClick={toggleTheme}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-colors ${
-                    darkMode
-                      ? 'text-moon-gold hover:bg-moon-blue/30'
-                      : 'text-purple-600 hover:bg-purple-50'
-                  }`}
-                >
-                  {darkMode ? <FiSun className="w-5 h-5" /> : <FiMoon className="w-5 h-5" />}
-                  <span className="font-medium">{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
-                </button>
+                  </Link>
+                ))}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
+
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#8B5CF6] px-1 pt-1 pb-1">
+                Posters by Category
+              </p>
+              <div className="pb-2 grid grid-cols-2 gap-1">
+                {CATEGORY_GROUPS.flatMap(g => g.items).map(cat => (
+                  <button
+                    key={cat.value}
+                    onClick={() => { navigate(`/products?category=${cat.value}`); setMobileOpen(false); }}
+                    className={`flex items-center gap-2 py-2.5 px-2 min-h-[44px] rounded-lg text-[13px] font-medium text-left transition-colors ${
+                      dk ? 'text-[#B0ACBE] hover:text-white hover:bg-white/[0.06]' : 'text-[#424245] hover:text-[#0B0B10] hover:bg-black/[0.04]'
+                    }`}
+                  >
+                    <span className="w-6 h-6 rounded overflow-hidden flex-shrink-0">
+                      <img src={cat.img} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    </span>
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <MobileItem to="/home-decor" dk={dk} onClick={() => setMobileOpen(false)}>Home Decor</MobileItem>
+          <MobileItem to="/solar-wobbler" dk={dk} onClick={() => setMobileOpen(false)}>Solar Wobbler</MobileItem>
+          <MobileItem to="/customize" dk={dk} onClick={() => setMobileOpen(false)}>Customize</MobileItem>
+
+          {/* Auth */}
+          <div className={`pt-4 mt-3 border-t space-y-0.5 ${dk ? 'border-white/[0.06]' : 'border-black/[0.06]'}`}>
+            {isAuthenticated ? (
+              <>
+                <p className={`px-1 pb-2 text-[12px] ${dk ? 'text-[#6B6B7A]' : 'text-[#86868B]'}`}>
+                  Signed in as <span className={`font-semibold ${dk ? 'text-white' : 'text-[#0B0B10]'}`}>{user?.name}</span>
+                </p>
+                <MobileItem to="/account" dk={dk} onClick={() => setMobileOpen(false)}>My Account</MobileItem>
+                <MobileItem to="/my-orders" dk={dk} onClick={() => setMobileOpen(false)}>My Orders</MobileItem>
+                {user?.role === 'admin' && (
+                  <MobileItem to="/admin" dk={dk} onClick={() => setMobileOpen(false)}>Admin Panel</MobileItem>
+                )}
+                <button
+                  onClick={() => { handleLogout(); setMobileOpen(false); }}
+                  className={`w-full text-left py-3 min-h-[48px] text-[15px] transition-colors ${dk ? 'text-red-400' : 'text-red-600'}`}
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <Link to="/login" onClick={() => setMobileOpen(false)}
+                className="block w-full text-center py-3.5 rounded-xl bg-[#8B5CF6] text-white font-semibold text-[15px] hover:bg-[#7C3AED] transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
+
+          {/* Theme toggle */}
+          <div className={`pt-3 mt-2 border-t ${dk ? 'border-white/[0.06]' : 'border-black/[0.06]'}`}>
+            <button
+              onClick={toggleTheme}
+              className={`flex items-center gap-2.5 py-3 min-h-[48px] text-[14px] transition-colors ${dk ? 'text-[#B0ACBE] hover:text-white' : 'text-[#424245] hover:text-[#0B0B10]'}`}
+            >
+              {dk ? <FiSun className="w-4 h-4" /> : <FiMoon className="w-4 h-4" />}
+              {dk ? 'Light Mode' : 'Dark Mode'}
+            </button>
+          </div>
+        </div>
+      </div>
     </nav>
   );
 }
 
-// Desktop NavLink Component
-function NavLink({ to, icon: Icon, children, darkMode }) {
+// ─── Sub-components ────────────────────────────────────────────────────────────
+
+function NavItem({ to, dk, children }) {
   return (
-    <Link
-      to={to}
-      className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all duration-300 ease-out border font-semibold text-sm group relative overflow-hidden active:scale-95 ${
-        darkMode
-          ? 'bg-moon-midnight/50 hover:bg-moon-blue/50 text-moon-silver hover:text-moon-gold border-moon-gold/20 hover:border-moon-gold/50'
-          : 'bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-800 border-purple-200 hover:border-purple-400'
-      }`}
-      style={{
-        transform: 'translateZ(0)',
-        willChange: 'transform',
-      }}
-    >
-      <Icon className="w-4 h-4 group-hover:scale-110 transition-transform duration-300 ease-out" />
-      <span>{children}</span>
+    <Link to={to} className={`apple-nav-link ${dk ? 'apple-nav-link--dark' : 'apple-nav-link--light'}`}>
+      {children}
     </Link>
   );
 }
 
-// Mobile NavLink Component - 44px min touch target for accessibility
-function MobileNavLink({ to, icon: Icon, children, darkMode, onClick, badge }) {
+function DropdownItem({ to, onClick, dk, icon, children }) {
   return (
-    <Link
-      to={to}
-      onClick={onClick}
-      className={`flex items-center justify-between px-4 py-3 min-h-[48px] rounded-xl transition-colors ${
-        darkMode
-          ? 'text-moon-silver hover:bg-moon-blue/30 hover:text-moon-gold active:bg-moon-blue/50'
-          : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700 active:bg-purple-100'
+    <Link to={to} onClick={onClick}
+      className={`flex items-center gap-3 px-4 py-2.5 text-[13px] transition-colors ${
+        dk ? 'text-[#B0ACBE] hover:text-white hover:bg-white/[0.05]' : 'text-[#424245] hover:text-[#0B0B10] hover:bg-black/[0.04]'
       }`}
     >
-      <div className="flex items-center space-x-3">
-        <Icon className="w-5 h-5" />
-        <span className="font-medium text-base">{children}</span>
-      </div>
-      {badge > 0 && (
-        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-          darkMode
-            ? 'bg-moon-gold text-moon-night'
-            : 'bg-purple-600 text-white'
-        }`}>
-          {badge > 9 ? '9+' : badge}
-        </span>
-      )}
+      <span className="w-4 h-4 flex-shrink-0">{icon}</span>
+      {children}
+    </Link>
+  );
+}
+
+function MobileItem({ to, onClick, dk, children }) {
+  return (
+    <Link to={to} onClick={onClick}
+      className={`block py-3 min-h-[48px] text-[15px] font-medium transition-colors ${
+        dk ? 'text-[#B0ACBE] hover:text-white' : 'text-[#424245] hover:text-[#0B0B10]'
+      }`}
+    >
+      {children}
     </Link>
   );
 }

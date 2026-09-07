@@ -362,11 +362,13 @@ export default function Cart() {
                   </div>
                 )}
                 
-                <div className={`flex justify-between ${
+                <div className={`flex justify-between items-center ${
                   darkMode ? 'text-moon-silver/80' : 'text-gray-700'
                 }`}>
                   <span>Shipping</span>
-                  <span className="text-sm">Calculated at checkout</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-300">
+                    Dhaka ৳100 • Outside ৳140
+                  </span>
                 </div>
                 <div className={`border-t pt-3 flex justify-between text-lg font-bold ${
                   darkMode

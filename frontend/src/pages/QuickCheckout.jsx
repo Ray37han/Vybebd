@@ -137,7 +137,7 @@ export default function QuickCheckout() {
   
   let shippingCost = 0;
   if (form.district) {
-    shippingCost = form.district === 'Dhaka' ? 100 : 130;
+    shippingCost = form.district === 'Dhaka' ? 100 : 140;
   }
   
   const total = discountedSubtotal + shippingCost;
@@ -383,11 +383,12 @@ export default function QuickCheckout() {
                   >
                     <option value="">— Select your district —</option>
                     {BD_DISTRICTS.map((d) => (
-                      <option key={d} value={d}>{d}</option>
+                      <option key={d} value={d}>{d} — {d === 'Dhaka' ? '৳100' : '৳140'}</option>
                     ))}
                   </select>
                   <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">▼</span>
                 </div>
+                <p className="text-[11px] text-gray-400 mt-1">Delivery: Dhaka ৳100 • Outside Dhaka ৳140</p>
               </Field>
 
               <Field label="Full Address" required error={errors.address}>
@@ -445,7 +446,7 @@ export default function QuickCheckout() {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300 text-sm">Shipping</span>
                   <span className="text-white text-md font-semibold">
-                    {form.district ? `৳${shippingCost}` : <span className="text-gray-400 text-xs">Select district</span>}
+                    {form.district ? `৳${shippingCost}` : <span className="text-gray-400 text-xs">Dhaka ৳100 / Outside ৳140</span>}
                   </span>
                 </div>
                 <div className="flex justify-between items-center border-t border-white/10 pt-2 mt-1">

@@ -5,10 +5,11 @@ import HomeDecorSpotlight from '../components/HomeDecorSpotlight';
 import HeroCarousel from '../components/HeroCarousel';
 import CollectionGrid from '../components/CollectionGrid';
 import FeaturedProducts from '../components/FeaturedProducts';
+import CustomPosterChapter from '../components/CustomPosterChapter';
+import SolarWobblerChapter from '../components/SolarWobblerChapter';
 import BundleSection from '../components/BundleSection';
 import TrustBadges from '../components/TrustBadges';
 import InstagramFeed from '../components/InstagramFeed';
-import Newsletter from '../components/Newsletter';
 
 export default function Home() {
   const [darkMode, setDarkMode] = useState(() => {
@@ -19,7 +20,6 @@ export default function Home() {
     }
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
 
   useEffect(() => {
     // Scroll to top on page load
@@ -41,26 +41,6 @@ export default function Home() {
     return () => {
       window.removeEventListener('storage', handleThemeChange);
       window.removeEventListener('themeChange', handleThemeChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 639px)');
-    const handleViewportChange = (event) => setIsMobile(event.matches);
-
-    setIsMobile(mediaQuery.matches);
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleViewportChange);
-    } else {
-      mediaQuery.addListener(handleViewportChange);
-    }
-
-    return () => {
-      if (mediaQuery.removeEventListener) {
-        mediaQuery.removeEventListener('change', handleViewportChange);
-      } else {
-        mediaQuery.removeListener(handleViewportChange);
-      }
     };
   }, []);
 
@@ -138,49 +118,31 @@ export default function Home() {
         <AnnouncementBar />
 
         {/* Hero Section */}
-        <HeroCarousel />
+        <HeroCarousel darkMode={darkMode} />
 
-        {isMobile ? (
-          <>
-            {/* Best Seller */}
-            <FeaturedProducts darkMode={darkMode} />
+        {/* 1. Shop By Passion / Categories */}
+        <CollectionGrid darkMode={darkMode} />
 
-            {/* Trending */}
-            <TrustBadges darkMode={darkMode} />
+        {/* 2. Featured Posters & Best Sellers */}
+        <FeaturedProducts darkMode={darkMode} />
 
-            {/* Categories */}
-            <CollectionGrid darkMode={darkMode} />
+        {/* 3. Custom Posters Chapter */}
+        <CustomPosterChapter darkMode={darkMode} />
 
-            {/* Offer Banner */}
-            <BundleSection />
+        {/* 4. Living Art — Solar Wobbler Chapter */}
+        <SolarWobblerChapter darkMode={darkMode} />
 
-            {/* Reviews */}
-            <InstagramFeed darkMode={darkMode} />
-          </>
-        ) : (
-          <>
-            {/* Collection Grid */}
-            <CollectionGrid darkMode={darkMode} />
+        {/* 5. Home Decor Spotlight (Hidden for now) */}
+        {/* <HomeDecorSpotlight darkMode={darkMode} /> */}
 
-            {/* Home Decor Spotlight — bridge section */}
-            <HomeDecorSpotlight darkMode={darkMode} />
+        {/* 6. Value Trust Badges */}
+        <TrustBadges darkMode={darkMode} />
 
-            {/* Featured Products */}
-            <FeaturedProducts darkMode={darkMode} />
+        {/* 7. Limited Offer Bundles */}
+        <BundleSection darkMode={darkMode} />
 
-            {/* Trust Badges */}
-            <TrustBadges darkMode={darkMode} />
-
-            {/* Bundle Section */}
-            <BundleSection />
-
-            {/* Instagram Feed */}
-            <InstagramFeed darkMode={darkMode} />
-
-            {/* Newsletter */}
-            <Newsletter />
-          </>
-        )}
+        {/* 8. Instagram & Community Reviews */}
+        <InstagramFeed darkMode={darkMode} />
 
         {/* Privacy Policy Notice - Required for verification */}
         <div className="max-w-7xl mx-auto px-4 py-8 text-center">

@@ -21,8 +21,17 @@ export default {
           900: '#4c1d95',
         },
         vybe: {
+          // Legacy (backward compat)
           purple: '#7c3aed',
-          pink: '#ec4899',
+          pink:   '#ec4899',
+          // VYBE 2.0 tokens
+          bg:      '#0B0B10',
+          surface: '#111117',
+          'surface-2': '#18181F',
+          text:    '#F0EDE8',
+          muted:   '#6B6B7A',
+          accent:  '#8B5CF6',
+          warm:    '#F59E0B',
         },
         moon: {
           night: '#0a0e27',

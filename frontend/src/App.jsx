@@ -8,6 +8,7 @@ import CheckoutSkeleton from './components/CheckoutSkeleton'
 import LoadingStore from './components/LoadingStore'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AnalyticsProvider } from './context/AnalyticsContext'
+import SmoothScroll from './components/SmoothScroll'
 import './components/PageTransitions.css'
 
 // Critical storefront entry: static import for fastest initial paint
@@ -89,6 +90,7 @@ function App() {
   return (
     <ErrorBoundary>
     <AnalyticsProvider>
+    <SmoothScroll>
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow pt-16">
@@ -202,6 +204,7 @@ function App() {
       <Footer />
       <BackToTop />
     </div>
+    </SmoothScroll>
     </AnalyticsProvider>
     </ErrorBoundary>
   )

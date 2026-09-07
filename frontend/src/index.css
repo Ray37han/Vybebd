@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   VYBE 2.0 — Design System Custom Properties
+   ============================================ */
+:root {
+  --vybe-bg:         #0B0B10;
+  --vybe-surface:    #111117;
+  --vybe-surface-2:  #18181F;
+  --vybe-text:       #F0EDE8;
+  --vybe-muted:      #6B6B7A;
+  --vybe-border:     rgba(255,255,255,0.08);
+  --vybe-accent:     #8B5CF6;
+  --vybe-accent-dim: #7C3AED;
+  --vybe-warm:       #F59E0B;
+  --vybe-radius:     12px;
+  --vybe-ease:       200ms ease-out;
+}
+
+/* Light mode overrides */
+.light, :root[data-theme='light'] {
+  --vybe-bg:         #FAFAFA;
+  --vybe-surface:    #FFFFFF;
+  --vybe-surface-2:  #F4F4F5;
+  --vybe-text:       #0B0B10;
+  --vybe-muted:      #6B7280;
+  --vybe-border:     rgba(0,0,0,0.08);
+}
+
 @layer base {
   * {
     @apply box-border;
@@ -12,21 +39,23 @@
   }
   
   body {
-    @apply font-sans antialiased text-slate-700;
+    @apply font-sans antialiased;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    will-change: scroll-position;
-    
-    /* Claymorphism Background - Light Mode */
-    background: linear-gradient(135deg, #fafafa 0%, #f4f4f5 25%, #e4e4e7 75%, #d4d4d8 100%);
+    /* Background + text follow device theme via .dark class on <html> */
+    background-color: #FAFAFA;
+    color: #0B0B10;
   }
 
-  /* Dark mode body styles with proper Clay background */
   .dark body {
-    @apply text-slate-200;
-    /* Claymorphism Background - Dark Mode */
-    background: linear-gradient(135deg, #18181b 0%, #27272a 25%, #3f3f46 75%, #27272a 100%);
+    background-color: #0B0B10;
+    color: #F0EDE8;
+  }
+
+  /* Additional dark mode resets */
+  .dark {
+    color-scheme: dark;
   }
   
   /* ============================================
@@ -227,6 +256,174 @@
 }
 
 @layer components {
+  /* ─────────────────────────────────────────────
+     Apple-style nav text link
+     – no background/border at rest
+     – pill fill on hover (matches apple.com exactly)
+     – underline-under-text effect on active route
+  ───────────────────────────────────────────── */
+  .apple-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 14px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 9999px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+    white-space: nowrap;
+    position: relative;
+    transition: background-color 150ms ease, color 150ms ease;
+    text-decoration: none;
+  }
+
+  /* After: slim underline indicator slides in from center */
+  .apple-nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: calc(100% - 28px);
+    height: 1.5px;
+    border-radius: 9999px;
+    background: currentColor;
+    opacity: 0.45;
+    transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .apple-nav-link:hover::after {
+    transform: translateX(-50%) scaleX(1);
+  }
+
+  /* Dark variant */
+  .apple-nav-link--dark {
+    color: #B0ACBE;
+  }
+  .apple-nav-link--dark:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  /* Light variant */
+  .apple-nav-link--light {
+    color: #424245;
+  }
+  .apple-nav-link--light:hover {
+    color: #0B0B10;
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  /* Active route highlight */
+  .apple-nav-link[aria-current="page"]::after,
+  .apple-nav-link.active::after {
+    transform: translateX(-50%) scaleX(1);
+    opacity: 0.7;
+  }
+
+  /* ─────────────────────────────────────────────
+     Circular icon button (Cart, User, Theme)
+  ───────────────────────────────────────────── */
+  .nav-icon-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 9999px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease;
+    text-decoration: none;
+  }
+
+  .nav-icon-btn--dark {
+    color: #B0ACBE;
+  }
+  .nav-icon-btn--dark:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.09);
+  }
+
+  .nav-icon-btn--light {
+    color: #424245;
+  }
+  .nav-icon-btn--light:hover {
+    color: #0B0B10;
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  /* ─────────────────────────────────────────────
+     VYBE 2.0 Button Primitives
+  ───────────────────────────────────────────── */
+
+  /* Primary: solid violet, pill shape */
+  .vybe-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 font-semibold;
+    padding: 10px 24px;
+    border-radius: 9999px;
+    background: var(--vybe-accent);
+    color: #fff;
+    font-size: 14px;
+    line-height: 1;
+    border: none;
+    cursor: pointer;
+    transition: background-color var(--vybe-ease), transform 100ms ease, box-shadow var(--vybe-ease);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .vybe-btn-primary:hover {
+    background: var(--vybe-accent-dim);
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.35);
+    transform: translateY(-1px);
+  }
+
+  .vybe-btn-primary:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: none;
+  }
+
+  /* Shimmer on hover */
+  .vybe-btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+  }
+  .vybe-btn-primary:hover::before { transform: translateX(100%); }
+
+  /* Secondary: ghost pill */
+  .vybe-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 font-medium;
+    padding: 10px 24px;
+    border-radius: 9999px;
+    background: transparent;
+    color: var(--vybe-text, #F0EDE8);
+    font-size: 14px;
+    line-height: 1;
+    border: 1px solid var(--vybe-border, rgba(255,255,255,0.15));
+    cursor: pointer;
+    transition: background-color var(--vybe-ease), border-color var(--vybe-ease), transform 100ms ease;
+  }
+
+  .vybe-btn-secondary:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.25);
+    transform: translateY(-1px);
+  }
+
+  .vybe-btn-secondary:active {
+    transform: translateY(0) scale(0.98);
+  }
+
   /* ===== PRIMARY CTA BUTTONS (Add to Cart, Checkout) ===== */
   /* Effect: Glossy Shimmer Sweep on Hover + Satisfying Click */
   .btn-primary {
@@ -607,9 +804,33 @@
   transition: transform 0.15s ease-out;
 }
 
-/* Smooth scroll for specific elements only */
+/* ============================================
+   Lenis Smooth Scrolling
+   ============================================ */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe,
+body.is-scrolling * {
+  pointer-events: none !important;
+}
+
+/* Smooth scroll for specific elements */
 .smooth-scroll {
-  scroll-behavior: auto; /* Changed to auto for better performance */
+  scroll-behavior: auto;
   -webkit-overflow-scrolling: touch;
 }
 

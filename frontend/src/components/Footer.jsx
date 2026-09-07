@@ -1,277 +1,184 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaFacebook, FaInstagram, FaTwitter, FaPinterest, FaWhatsapp } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaWhatsapp } from 'react-icons/fa';
+import { FiTruck, FiPhone, FiShield } from 'react-icons/fi';
+
+/**
+ * Footer — VYBE 2.0
+ * 4 columns: Shop / Support / VYBE / Payment & Delivery
+ * No newsletter form (single newsletter section is on homepage before footer).
+ */
 
 export default function Footer() {
   const [darkMode, setDarkMode] = useState(true);
-  const [email, setEmail] = useState('');
-  const [subscribeStatus, setSubscribeStatus] = useState('');
-  const [showShippingInfo, setShowShippingInfo] = useState(false);
-  const [showContactInfo, setShowContactInfo] = useState(false);
 
-  // Listen for theme changes from localStorage
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setDarkMode(savedTheme === 'dark');
-    }
-
-    const handleStorageChange = () => {
-      const theme = localStorage.getItem('theme');
-      if (theme) {
-        setDarkMode(theme === 'dark');
-      }
+    const applyTheme = () => {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setDarkMode(saved ? saved === 'dark' : prefersDark);
     };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('themeChange', handleStorageChange);
-    
+    applyTheme();
+    window.addEventListener('storage', applyTheme);
+    window.addEventListener('themeChange', applyTheme);
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('themeChange', handleStorageChange);
+      window.removeEventListener('storage', applyTheme);
+      window.removeEventListener('themeChange', applyTheme);
     };
   }, []);
 
+  const dk = darkMode;
+  const bg   = dk ? '#0B0B10' : '#F4F4F5';
+  const text  = dk ? '#B0ACBE' : '#6B7280';
+  const head  = dk ? '#F0EDE8' : '#0B0B10';
+  const divBorder = dk ? 'border-white/[0.06]' : 'border-black/[0.06]';
+  const linkHover = dk ? 'hover:text-white' : 'hover:text-[#0B0B10]';
+
   return (
-    <footer className={`mt-20 transition-colors duration-500 ${
-      darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'
-    }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand */}
+    <footer style={{ backgroundColor: bg }} className={`transition-colors duration-300 pt-14 pb-10`}>
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+
+          {/* ── Column 1: Shop ── */}
           <div>
-            <h3 className={`text-2xl font-bold mb-4 ${darkMode ? 'gradient-text' : 'text-purple-600'}`}>VYBE</h3>
-            <p className={`mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Transform your space with personalized art that reflects your unique style.
+            <h4 className="text-[11px] font-bold uppercase tracking-widest mb-5" style={{ color: '#8B5CF6' }}>Shop</h4>
+            <ul className="space-y-0.5">
+              {[
+                { label: 'All Posters',     to: '/products' },
+                { label: 'Custom Posters',  to: '/customize' },
+                { label: 'Home Decor',      to: '/home-decor' },
+                { label: 'Solar Wobbler',   to: '/solar-wobbler' },
+                { label: 'Bundles',         to: '/products?tag=bundle' },
+                { label: 'New Arrivals',    to: '/products?sort=newest' },
+              ].map(l => (
+                <li key={l.to}>
+                  <Link
+                    to={l.to}
+                    className={`block py-2 min-h-[44px] text-[14px] transition-colors ${linkHover}`}
+                    style={{ color: text }}
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* ── Column 2: Support ── */}
+          <div>
+            <h4 className="text-[11px] font-bold uppercase tracking-widest mb-5" style={{ color: '#8B5CF6' }}>Support</h4>
+            <ul className="space-y-0.5">
+              {[
+                { label: 'Track My Order',     to: '/my-orders' },
+                { label: 'Shipping Info',       to: '/shipping' },
+                { label: 'Returns & Exchange',  to: '/returns' },
+                { label: 'FAQ',                 to: '/faq' },
+                { label: 'Privacy Policy',      to: '/privacy-policy' },
+                { label: 'Terms of Service',    to: '/terms-of-service' },
+              ].map(l => (
+                <li key={l.to}>
+                  <Link
+                    to={l.to}
+                    className={`block py-2 min-h-[44px] text-[14px] transition-colors ${linkHover}`}
+                    style={{ color: text }}
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* ── Column 3: VYBE ── */}
+          <div>
+            <h4 className="text-[11px] font-bold uppercase tracking-widest mb-5" style={{ color: '#8B5CF6' }}>VYBE</h4>
+            {/* Brand blurb */}
+            <p className="text-[13px] leading-relaxed mb-6" style={{ color: text }}>
+              Premium wall art for what you&apos;re into. Sports, anime, gaming, custom prints — made in Bangladesh.
             </p>
-            <div className="flex space-x-2">
-              <a href="https://www.facebook.com/profile.php?id=61580594942475" target="_blank" rel="noopener noreferrer" 
-                className={`inline-flex items-center justify-center w-11 h-11 rounded-lg transition ${
-                  darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-purple-600 hover:bg-gray-200'
-                }`}
-                aria-label="Facebook"
-              >
-                <FaFacebook className="w-6 h-6" />
-              </a>
-              <a href="https://www.instagram.com/vybe.bd/" target="_blank" rel="noopener noreferrer" 
-                className={`inline-flex items-center justify-center w-11 h-11 rounded-lg transition ${
-                  darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-purple-600 hover:bg-gray-200'
-                }`}
-                aria-label="Instagram"
-              >
-                <FaInstagram className="w-6 h-6" />
-              </a>
-              <a href="#" 
-                className={`inline-flex items-center justify-center w-11 h-11 rounded-lg transition ${
-                  darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-purple-600 hover:bg-gray-200'
-                }`}
-                aria-label="Twitter"
-              >
-                <FaTwitter className="w-6 h-6" />
-              </a>
-              <a href="#" 
-                className={`inline-flex items-center justify-center w-11 h-11 rounded-lg transition ${
-                  darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-600 hover:text-purple-600 hover:bg-gray-200'
-                }`}
-                aria-label="Pinterest"
-              >
-                <FaPinterest className="w-6 h-6" />
-              </a>
+            {/* Socials */}
+            <div className="flex gap-2">
+              {[
+                { href: 'https://www.facebook.com/profile.php?id=61580594942475', icon: <FaFacebook className="w-4 h-4" />, label: 'Facebook' },
+                { href: 'https://www.instagram.com/vybe.bd/', icon: <FaInstagram className="w-4 h-4" />, label: 'Instagram' },
+                { href: 'https://wa.me/8801410809138', icon: <FaWhatsapp className="w-4 h-4" />, label: 'WhatsApp' },
+              ].map(s => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.label}
+                  className={`inline-flex items-center justify-center w-10 h-10 rounded-full border transition-colors ${
+                    dk
+                      ? 'border-white/10 text-[#B0ACBE] hover:text-white hover:border-white/30 hover:bg-white/[0.06]'
+                      : 'border-black/10 text-[#6B7280] hover:text-[#0B0B10] hover:border-black/20 hover:bg-black/[0.04]'
+                  }`}
+                >
+                  {s.icon}
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Quick Links - Mobile-friendly touch targets */}
+          {/* ── Column 4: Payment & Delivery ── */}
           <div>
-            <h4 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Quick Links</h4>
-            <ul className="space-y-1">
-              <li>
-                <Link to="/" className={`inline-block py-2 min-h-[44px] transition ${
-                  darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'
-                }`}>
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link to="/products" className={`inline-block py-2 min-h-[44px] transition ${
-                  darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'
-                }`}>
-                  Shop Posters
-                </Link>
-              </li>
-              <li>
-                <Link to="/home-decor" className={`inline-block py-2 min-h-[44px] transition ${
-                  darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'
-                }`}>
-                  🏠 Home Decor
-                </Link>
-              </li>
-              <li>
-                <Link to="/solar-wobbler" className={`inline-block py-2 min-h-[44px] transition ${
-                  darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'
-                }`}>
-                  ☀️ Solar Wobbler
-                </Link>
-              </li>
-              <li>
-                <Link to="/products?category=custom" className={`inline-block py-2 min-h-[44px] transition ${
-                  darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'
-                }`}>
-                  Customize
-                </Link>
-              </li>
-              <li>
-                <Link to="/my-orders" className={`inline-block py-2 min-h-[44px] transition ${
-                  darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'
-                }`}>
-                  Track Order
-                </Link>
-              </li>
-            </ul>
-          </div>
+            <h4 className="text-[11px] font-bold uppercase tracking-widest mb-5" style={{ color: '#8B5CF6' }}>Payment &amp; Delivery</h4>
 
-          {/* Customer Service */}
-          <div>
-            <h4 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Customer Service</h4>
-            <ul className="space-y-2">
-              <li>
-                <a href="#" className={`transition ${
-                  darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'
-                }`}>
-                  FAQ
-                </a>
-              </li>
-              <li 
-                className="relative"
-                onMouseEnter={() => setShowShippingInfo(true)}
-                onMouseLeave={() => setShowShippingInfo(false)}
-              >
-                <button 
-                  onClick={() => setShowShippingInfo(!showShippingInfo)}
-                  className={`transition font-semibold ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'}`}
-                >
-                  Shipping Info ▼
-                </button>
-                {showShippingInfo && (
-                  <div className={`mt-2 p-3 rounded-lg ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
-                    <p className="text-xs mb-1">Delivery all over Bangladesh</p>
-                    <p className="text-xs">Inside Dhaka: ৳100</p>
-                    <p className="text-xs">Outside Dhaka: ৳130</p>
-                  </div>
-                )}
-              </li>
-              <li>
-                <a href="#" className={`transition ${
-                  darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'
-                }`}>
-                  Returns & Exchange
-                </a>
-              </li>
-              <li 
-                className="relative"
-                onMouseEnter={() => setShowContactInfo(true)}
-                onMouseLeave={() => setShowContactInfo(false)}
-              >
-                <button 
-                  onClick={() => setShowContactInfo(!showContactInfo)}
-                  className={`transition font-semibold ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'}`}
-                >
-                  Contact Us ▼
-                </button>
-                {showContactInfo && (
-                  <div className={`mt-2 p-3 rounded-lg space-y-2 ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                    <a href="https://www.facebook.com/profile.php?id=61580594942475" target="_blank" rel="noopener noreferrer" className={`transition flex items-center gap-2 ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'}`}>
-                      <FaFacebook className="w-4 h-4" />
-                      Facebook
-                    </a>
-                      <a href="https://wa.me/8801410809138" target="_blank" rel="noopener noreferrer" className={`transition flex items-center gap-2 ${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-purple-600'}`}>
-                      <FaWhatsapp className="w-4 h-4" />
-                      WhatsApp
-                    </a>
-                  </div>
-                )}
-              </li>
-            </ul>
-          </div>
-
-          {/* Newsletter */}
-          <div>
-            <h4 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Newsletter</h4>
-            <p className={`mb-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Subscribe for exclusive offers and updates
-            </p>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              if (email && email.includes('@')) {
-                setSubscribeStatus('success');
-                setEmail('');
-                setTimeout(() => setSubscribeStatus(''), 3000);
-              } else {
-                setSubscribeStatus('error');
-                setTimeout(() => setSubscribeStatus(''), 3000);
-              }
-            }} className="space-y-2">
-              <div className="flex">
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className={`flex-1 px-4 py-2 rounded-l-lg focus:outline-none ${
-                    darkMode ? 'text-gray-900 bg-white' : 'text-gray-900 bg-white border border-gray-300'
-                  }`}
-                />
-                <button type="submit" className="px-4 py-2 bg-gradient-to-r from-vybe-purple to-vybe-pink rounded-r-lg hover:opacity-90 transition text-white">
-                  Subscribe
-                </button>
+            {/* Payment methods */}
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center gap-2.5">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold bg-[#E2136E] text-white leading-none">bKash</span>
+                <span className="text-[13px]" style={{ color: text }}>Accepted</span>
               </div>
-              {subscribeStatus === 'success' && (
-                <p className="text-sm text-green-500">✓ Successfully subscribed!</p>
-              )}
-              {subscribeStatus === 'error' && (
-                <p className="text-sm text-red-500">✗ Please enter a valid email</p>
-              )}
-            </form>
+              <div className="flex items-center gap-2.5">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold bg-[#F7941D] text-white leading-none">Nagad</span>
+                <span className="text-[13px]" style={{ color: text }}>Accepted</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <FiShield className="w-4 h-4 flex-shrink-0" style={{ color: '#8B5CF6' }} />
+                <span className="text-[13px]" style={{ color: text }}>Cash on Delivery</span>
+              </div>
+            </div>
+
+            {/* Delivery info */}
+            <div className={`p-3.5 rounded-xl border text-[12px] space-y-1.5 ${dk ? 'border-white/[0.06] bg-white/[0.03]' : 'border-black/[0.06] bg-black/[0.02]'}`}>
+              <div className="flex items-center gap-2 font-semibold" style={{ color: head }}>
+                <FiTruck className="w-3.5 h-3.5" style={{ color: '#8B5CF6' }} />
+                Delivery Charges
+              </div>
+              <p style={{ color: text }}>Inside Dhaka — <strong style={{ color: head }}>৳100</strong></p>
+              <p style={{ color: text }}>Outside Dhaka — <strong style={{ color: head }}>৳140</strong></p>
+            </div>
+
+            {/* Contact */}
+            <a
+              href="https://wa.me/8801410809138"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 flex items-center gap-2 text-[13px] transition-colors hover:text-[#8B5CF6]"
+              style={{ color: text }}
+            >
+              <FiPhone className="w-3.5 h-3.5" />
+              WhatsApp Support
+            </a>
           </div>
         </div>
 
-        {/* Bottom */}
-        <div className={`mt-8 pt-8 text-center text-sm ${
-          darkMode ? 'border-t border-gray-800 text-gray-400' : 'border-t border-gray-300 text-gray-600'
-        }`}>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-4">
-            <Link 
-              to="/privacy-policy" 
-              className={`transition hover:underline ${
-                darkMode ? 'hover:text-white' : 'hover:text-purple-600'
-              }`}
+        {/* ── Bottom bar ── */}
+        <div className={`pt-8 border-t flex flex-col sm:flex-row items-center justify-between gap-3 text-[12px] ${divBorder}`} style={{ color: text }}>
+          <p>© {new Date().getFullYear()} VYBE. All rights reserved. Made with ♥ in Bangladesh.</p>
+          <p>
+            Made by{' '}
+            <a
+              href="https://www.linkedin.com/in/rakibul-hasan-rayhan/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-[#8B5CF6] underline underline-offset-2"
             >
-              Privacy Policy
-            </Link>
-            <span className="hidden sm:inline">•</span>
-            <Link 
-              to="/terms-of-service" 
-              className={`transition hover:underline ${
-                darkMode ? 'hover:text-white' : 'hover:text-purple-600'
-              }`}
-            >
-              Terms of Service
-            </Link>
-          </div>
-            <p>&copy; {new Date().getFullYear()} VYBE. All rights reserved. Made with ❤️ in Bangladesh</p>
-            <p className="mt-2">
-              Made by{' '}
-              <a
-                href="https://www.linkedin.com/in/rakibul-hasan-rayhan/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`transition hover:underline ${
-                  darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-purple-600'
-                }`}
-              >
-                Rakibul Hasan Rayhan
-              </a>
-            </p>
+              Rakibul Hasan Rayhan
+            </a>
+          </p>
         </div>
       </div>
     </footer>

@@ -1,152 +1,182 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiArrowRight, FiChevronLeft, FiChevronRight, FiSun, FiZap, FiCheck } from 'react-icons/fi';
+import { motion } from 'framer-motion';
+import {
+  FiArrowRight,
+  FiChevronLeft,
+  FiChevronRight,
+  FiSun,
+  FiZap,
+  FiPause,
+  FiPlay,
+  FiShield,
+  FiTruck,
+  FiCheck,
+} from 'react-icons/fi';
 
-// Import optimized images (modern WebP format)
+// Curated authentic wall art & product assets
+import roomAnimeImg from './images/room-anime.png';
+import movies2Img from './images/MOVIES 2.webp';
+import roomGamingImg from './images/room-gaming.png';
 import solarWobblerMonkeyImg from './images/SOLAR_WOBBLER_MONKEY.webp';
 import solarWobblerBearImg from './images/SOLAR_WOBBLER_BEAR.webp';
-import footballImg from './images/FOOTBALL.webp';
-import gamesImg from './images/GAMES.webp';
-import geminiImg from './images/gemini.webp';
 
-/**
- * Real Solar Wobbler product variants from authentic photography
- * Captures the actual products in natural window sunlight on Tagore's books.
- */
-const WOBBLER_VARIANTS = [
+const WOBBLER_MODELS = [
   {
     id: 'monkey',
     name: 'Monkey Edition',
-    badge: '🐒 Monkey Edition',
-    tagline: 'Holding a banana & peace sign',
+    badge: '🐒 Monkey',
     image: solarWobblerMonkeyImg,
-    accent: 'from-amber-500 to-yellow-500',
   },
   {
     id: 'bear',
-    name: 'Sunny Bear Edition',
+    name: 'Sunny Bear',
     badge: '🐻 Sunny Bear',
-    tagline: 'With signature spectacles',
     image: solarWobblerBearImg,
-    accent: 'from-yellow-400 to-orange-500',
   },
 ];
 
 const slides = [
   {
+    id: 'anime',
+    category: 'Anime & Pop Culture',
+    eyebrow: 'ARCHIVAL ART PRINTS · PREMIUM MATTE',
+    title: 'Your Walls.',
+    highlight: 'Curated Elegance.',
+    highlightGradient: 'from-violet-500 via-fuchsia-400 to-pink-500',
+    subtitle: 'Gallery-quality anime and aesthetic prints. Premium non-glare protection, deep blacks, and vibrant pigment inks.',
+    cta: 'Shop Anime Art',
+    ctaLink: '/products?category=anime',
+    secondaryCta: 'Custom Posters',
+    secondaryCtaLink: '/customize',
+    image: roomAnimeImg,
+    frameTitle: 'Otaku Collection',
+    frameSub: 'Archival Pigment Matte Finish',
+    frameTag: 'Art Print',
+  },
+  {
+    id: 'cinema',
+    category: 'Cinema & Cult Classics',
+    eyebrow: 'MUSEUM GALLERY EDITIONS',
+    title: 'Cinema Legends,',
+    highlight: 'Curated For Life.',
+    highlightGradient: 'from-amber-400 via-orange-400 to-yellow-500',
+    subtitle: 'The Godfather, Star Wars, Scarface, and iconic moments captured in ultra-high resolution. Timeless art for modern spaces.',
+    cta: 'Shop Cinema Art',
+    ctaLink: '/products?category=movies',
+    secondaryCta: 'All Collections',
+    secondaryCtaLink: '/products',
+    image: movies2Img,
+    frameTitle: 'Classic Cinema',
+    frameSub: 'Ultra-High Dynamic Range',
+    frameTag: 'Art Print',
+  },
+  {
+    id: 'motorsport',
+    category: 'Motorsport & Battlestation',
+    eyebrow: 'CIRCUITS & SPEED HERITAGE',
+    title: 'Raw Adrenaline.',
+    highlight: 'On Your Wall.',
+    highlightGradient: 'from-cyan-400 via-blue-500 to-indigo-500',
+    subtitle: 'From Monaco corners to midnight asphalt. Precision automotive and sports art engineered to elevate your battlestation.',
+    cta: 'Shop Motorsport',
+    ctaLink: '/products?category=f1',
+    secondaryCta: 'Gaming Posters',
+    secondaryCtaLink: '/products?category=games',
+    image: roomGamingImg,
+    frameTitle: 'Speed & Sports',
+    frameSub: 'Anti-Glare Satin Finish',
+    frameTag: 'Art Print',
+  },
+  {
     id: 'solar-wobbler',
     isSpecial: true,
-    badge: '☀️ 100% REAL LIGHT POWERED · ZERO BATTERIES',
-    badgeColor: 'bg-gradient-to-r from-amber-500/30 to-yellow-500/20 text-amber-300 border border-amber-400/40',
+    category: 'Kinetic Living Art',
+    eyebrow: '100% LIGHT-POWERED · ZERO BATTERIES',
     title: 'Meet Solar Wobbler.',
-    highlight: 'Powered by Light.',
-    highlightGradient: 'from-amber-300 via-yellow-400 to-orange-500',
-    subtitle: 'Endless, hypnotic kinetic art for your desk or window sill. Placed in natural sunlight or under a room lamp, it rocks continuously — zero batteries, zero charging.',
-    cta: 'Explore Solar Wobbler',
+    highlight: 'Perpetual Motion.',
+    highlightGradient: 'from-amber-400 via-yellow-400 to-orange-400',
+    subtitle: 'Hypnotic kinetic desk art rocking continuously in natural window sunlight or lamp illumination. Zero charging, zero cords, pure calm.',
+    cta: 'Discover Wobbler',
     ctaLink: '/solar-wobbler',
-    secondaryCta: 'Order Direct',
+    secondaryCta: 'Order Direct (৳)',
     secondaryCtaLink: '/solar-wobbler#products',
-    features: ['100% Light Powered', 'Zero Batteries Ever', 'Silent Swaying Motion', 'Living Kinetic Art'],
-  },
-  {
-    id: 1,
-    isSpecial: false,
-    title: 'Turn Your Walls Into',
-    highlight: 'Vibes',
-    highlightGradient: 'from-purple-400 to-pink-400',
-    subtitle: 'Premium posters that speak your language. Made in Bangladesh, made for you.',
-    cta: 'Shop Now',
-    ctaLink: '/products',
-    secondaryCta: 'Custom Poster',
-    secondaryCtaLink: '/products?category=custom',
-    image: footballImg,
-    gradient: 'from-purple-900/90 via-purple-900/70 to-transparent',
-  },
-  {
-    id: 2,
-    isSpecial: false,
-    title: 'Your Passion,',
-    highlight: 'Your Wall',
-    highlightGradient: 'from-purple-400 to-pink-400',
-    subtitle: 'From Anime to Football — find art that defines you.',
-    cta: 'Explore Collections',
-    ctaLink: '/products',
-    secondaryCta: 'Custom Poster',
-    secondaryCtaLink: '/products?category=custom',
-    image: gamesImg,
-    gradient: 'from-indigo-900/90 via-indigo-900/70 to-transparent',
-  },
-  {
-    id: 3,
-    isSpecial: false,
-    title: 'Create Your Own',
-    highlight: 'Masterpiece',
-    highlightGradient: 'from-pink-400 to-rose-400',
-    subtitle: 'Upload any image. We\'ll turn it into premium wall art.',
-    cta: 'Start Creating',
-    ctaLink: '/customize',
-    secondaryCta: 'Custom Poster',
-    secondaryCtaLink: '/products?category=custom',
-    image: geminiImg,
-    gradient: 'from-pink-900/90 via-pink-900/70 to-transparent',
+    image: solarWobblerMonkeyImg,
+    frameTitle: 'Solar Wobbler',
+    frameSub: 'Natural Window Sunlight Active',
+    frameTag: 'Living Art',
   },
 ];
 
-export default function HeroCarousel() {
+export default function HeroCarousel({ darkMode: propDarkMode }) {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [direction, setDirection] = useState(0);
   const [activeWobblerIndex, setActiveWobblerIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Auto-advance main carousel - resets when slide changes, pauses on hover or hidden tab
+  // Synchronized theme detection (supports prop + .dark html class)
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof propDarkMode === 'boolean') return propDarkMode;
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (typeof propDarkMode === 'boolean') {
+      setIsDark(propDarkMode);
+      return;
+    }
+    const checkTheme = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, [propDarkMode]);
+
+  // Smooth auto-advance
   useEffect(() => {
     if (isPaused) return;
     const timer = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return;
-      setDirection(1);
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 7500);
+    }, 7000);
     return () => clearInterval(timer);
   }, [currentSlide, isPaused]);
 
-  // Auto-cycle wobbler variants when on the wobbler slide
+  // Wobbler auto-cycle
   useEffect(() => {
     if (slides[currentSlide]?.isSpecial) {
       const wobblerTimer = setInterval(() => {
-        setActiveWobblerIndex((prev) => (prev + 1) % WOBBLER_VARIANTS.length);
-      }, 4000);
+        setActiveWobblerIndex((prev) => (prev + 1) % WOBBLER_MODELS.length);
+      }, 4500);
       return () => clearInterval(wobblerTimer);
     }
   }, [currentSlide]);
 
   const goToSlide = (index) => {
-    setDirection(index > currentSlide ? 1 : -1);
     setCurrentSlide(index);
   };
 
   const nextSlide = () => {
-    setDirection(1);
     setCurrentSlide((prev) => (prev + 1) % slides.length);
   };
 
   const prevSlide = () => {
-    setDirection(-1);
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
   };
 
   const slide = slides[currentSlide];
-  const activeWobbler = WOBBLER_VARIANTS[activeWobblerIndex];
-  const otherWobblerIndex = (activeWobblerIndex + 1) % WOBBLER_VARIANTS.length;
-  const otherWobbler = WOBBLER_VARIANTS[otherWobblerIndex];
+  const activeWobbler = WOBBLER_MODELS[activeWobblerIndex];
 
-  // Touch & Drag swipe support for mobile and desktop simulation
+  // Touch swipe support optimized for mobile
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
   const touchStartY = useRef(null);
   const touchEndY = useRef(null);
   const isSwiping = useRef(false);
-  const isDragging = useRef(false);
 
   const handleTouchStart = (e) => {
     if (!e.touches || e.touches.length === 0) return;
@@ -162,499 +192,432 @@ export default function HeroCarousel() {
     touchEndX.current = e.touches[0].clientX;
     touchEndY.current = e.touches[0].clientY;
     const diffX = touchStartX.current - touchEndX.current;
-    if (Math.abs(diffX) > 10) {
-      isSwiping.current = true;
-    }
+    if (Math.abs(diffX) > 10) isSwiping.current = true;
   };
 
   const handleTouchEnd = () => {
     if (touchStartX.current === null || touchEndX.current === null) return;
     const diffX = touchStartX.current - touchEndX.current;
     const diffY = touchStartY.current - touchEndY.current;
-    const minSwipeDistance = 35;
+    const minSwipeDistance = 30;
 
-    // Trigger slide change if horizontal swipe dominates vertical scrolling
     if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > minSwipeDistance) {
-      if (diffX > 0) {
-        // Swiped left (finger moved right to left) -> Next slide
-        nextSlide();
-      } else {
-        // Swiped right (finger moved left to right) -> Previous slide
-        prevSlide();
-      }
+      if (diffX > 0) nextSlide();
+      else prevSlide();
     }
-
-    // Reset touch coordinates
     touchStartX.current = null;
     touchEndX.current = null;
     touchStartY.current = null;
     touchEndY.current = null;
-
-    // Reset swiping state after short delay to prevent click events on child links
     setTimeout(() => {
       isSwiping.current = false;
     }, 150);
   };
 
-  const handleTouchCancel = () => {
-    touchStartX.current = null;
-    touchEndX.current = null;
-    touchStartY.current = null;
-    touchEndY.current = null;
-    isSwiping.current = false;
-  };
-
-  // Mouse drag fallback (allows desktop users testing mobile viewports to swipe)
-  const handleMouseDown = (e) => {
-    if (e.button !== 0) return;
-    isDragging.current = true;
-    touchStartX.current = e.clientX;
-    touchStartY.current = e.clientY;
-    touchEndX.current = e.clientX;
-    touchEndY.current = e.clientY;
-    isSwiping.current = false;
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging.current) return;
-    touchEndX.current = e.clientX;
-    touchEndY.current = e.clientY;
-    const diffX = touchStartX.current - touchEndX.current;
-    if (Math.abs(diffX) > 10) {
-      isSwiping.current = true;
-    }
-  };
-
-  const handleMouseUp = () => {
-    if (!isDragging.current) return;
-    isDragging.current = false;
-    handleTouchEnd();
-  };
-
-  const variants = {
-    enter: (direction) => ({
-      x: direction > 0 ? 1000 : -1000,
-      opacity: 0,
-    }),
-    center: {
-      zIndex: 1,
-      x: 0,
-      opacity: 1,
-    },
-    exit: (direction) => ({
-      zIndex: 0,
-      x: direction < 0 ? 1000 : -1000,
-      opacity: 0,
-    }),
-  };
-
   return (
-    <section 
-      className="relative min-h-[75vh] sm:min-h-[82vh] lg:min-h-[88vh] overflow-hidden bg-gray-950 flex items-center touch-pan-y select-none sm:select-auto cursor-grab active:cursor-grabbing sm:cursor-auto"
+    <section
+      className={`relative min-h-[520px] sm:min-h-[600px] lg:min-h-[680px] overflow-hidden transition-colors duration-500 flex items-center select-none ${
+        isDark ? 'bg-[#0B0B10] text-[#F0EDE8]' : 'bg-[#F9FAFB] text-[#0B0B10]'
+      }`}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchCancel}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
+      aria-label="Poster & Kinetic Art Showcase"
     >
-      {/* Background Slides */}
-      <AnimatePresence initial={false} custom={direction}>
-        <motion.div
-          key={currentSlide}
-          custom={direction}
-          variants={variants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{ x: { type: 'spring', stiffness: 300, damping: 30 }, opacity: { duration: 0.25 } }}
-          className="absolute inset-0 transform-gpu will-change-transform"
-        >
-          {slide.isSpecial ? (
-            /* Animated Solar Wobbler Background - Bright & Sunlit morning window ambiance */
-            <div className="relative w-full h-full overflow-hidden bg-[#241a0e]">
-              {/* Ken-Burns slow zoom on current wobbler photo with high brightness & vibrant colors */}
-              <AnimatePresence mode="wait">
-                <motion.img
-                  key={`bg-img-${activeWobbler.id}`}
-                  src={activeWobbler.image}
-                  alt={activeWobbler.name}
-                  initial={{ opacity: 0, scale: 1 }}
-                  animate={{
-                    opacity: 0.9,
-                    scale: [1, 1.06, 1],
-                    x: [0, -8, 0],
-                  }}
-                  exit={{ opacity: 0 }}
-                  transition={{
-                    opacity: { duration: 0.6 },
-                    scale: { duration: 16, repeat: Infinity, ease: 'easeInOut' },
-                  }}
-                  className="w-full h-full object-cover object-top filter saturate-125 brightness-110 blur-[1px]"
-                />
-              </AnimatePresence>
-
-              {/* Luminous Natural Sunburst streaming across the background */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-amber-600/20 via-yellow-300/25 to-amber-100/30 pointer-events-none mix-blend-screen" />
-
-              {/* Brilliant Golden Solar Flare */}
-              <motion.div
-                animate={{
-                  scale: [1, 1.15, 1],
-                  opacity: [0.45, 0.7, 0.45],
-                }}
-                transition={{
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                }}
-                className="absolute -top-32 right-10 w-[550px] h-[550px] sm:w-[800px] sm:h-[800px] rounded-full bg-gradient-to-br from-yellow-200/50 via-amber-400/40 to-transparent blur-3xl pointer-events-none"
+      {/* ───────────────────────────────────────────────────────────────────
+          Zero-Flicker Background Stack
+          ─────────────────────────────────────────────────────────────────── */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {slides.map((s, idx) => {
+          const isActive = idx === currentSlide;
+          const bgImg = s.isSpecial ? activeWobbler.image : s.image;
+          return (
+            <div
+              key={s.id}
+              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                isActive ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <img
+                src={bgImg}
+                alt=""
+                aria-hidden="true"
+                className={`w-full h-full object-cover object-center filter blur-2xl scale-105 ${
+                  isDark ? 'opacity-20' : 'opacity-10'
+                }`}
               />
+            </div>
+          );
+        })}
 
-              <motion.div
-                animate={{
-                  scale: [1.1, 0.95, 1.1],
-                  opacity: [0.3, 0.5, 0.3],
-                }}
-                transition={{
-                  duration: 7,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: 1,
-                }}
-                className="absolute -bottom-20 right-1/4 w-96 h-96 rounded-full bg-gradient-to-tr from-amber-400/35 to-yellow-200/20 blur-3xl pointer-events-none"
-              />
+        {/* Ambient Gradient Overlays for Guaranteed Text Legibility */}
+        <div
+          className={`absolute inset-0 transition-colors duration-500 ${
+            isDark
+              ? 'bg-gradient-to-r from-[#0B0B10] via-[#0B0B10]/95 to-[#0B0B10]/40'
+              : 'bg-gradient-to-r from-[#F9FAFB] via-[#F9FAFB]/95 to-[#F9FAFB]/30'
+          }`}
+        />
+        <div
+          className={`absolute inset-0 ${
+            isDark
+              ? 'bg-gradient-to-t from-[#0B0B10] via-transparent to-[#0B0B10]/50'
+              : 'bg-gradient-to-t from-[#F9FAFB] via-transparent to-[#F9FAFB]/40'
+          }`}
+        />
+      </div>
 
-              {/* Orbital Kinetic Rings in radiant gold */}
-              <div className="absolute right-10 top-1/2 -translate-y-1/2 hidden lg:block pointer-events-none">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
-                  className="w-[500px] h-[500px] rounded-full border border-dashed border-amber-300/35"
-                />
-                <motion.div
-                  animate={{ rotate: -360 }}
-                  transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
-                  className="absolute inset-10 rounded-full border border-yellow-300/25"
-                />
+      {/* ───────────────────────────────────────────────────────────────────
+          Main Content & Visual Stage (Clean, Frameless Layout)
+          ─────────────────────────────────────────────────────────────────── */}
+      <div className="relative z-10 w-full py-8 sm:py-14 lg:py-18">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="grid lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-center">
+            
+            {/* Left Column: Editorial Copy */}
+            <div className="lg:col-span-7 max-w-2xl text-left">
+              {/* Eyebrow Badge */}
+              <div
+                className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold tracking-wider uppercase mb-3 sm:mb-4 backdrop-blur-md border transition-colors duration-300 ${
+                  isDark
+                    ? 'bg-white/5 border-white/10 text-white/90'
+                    : 'bg-black/5 border-black/10 text-gray-800'
+                }`}
+              >
+                {slide.isSpecial ? (
+                  <FiSun className="w-3.5 h-3.5 text-amber-500 animate-spin" style={{ animationDuration: '12s' }} />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                )}
+                <span>{slide.eyebrow}</span>
               </div>
 
-              {/* Floating Golden Dust Particles / Sunlight Motes */}
-              {[...Array(6)].map((_, i) => (
-                <motion.div
-                  key={`spark-${i}`}
-                  className="absolute w-2.5 h-2.5 rounded-full bg-yellow-200 pointer-events-none blur-[0.5px] shadow-sm shadow-yellow-300"
-                  style={{
-                    left: `${18 + i * 14}%`,
-                    top: `${20 + (i % 3) * 25}%`,
-                  }}
-                  animate={{
-                    y: [-16, 16, -16],
-                    x: [-12, 12, -12],
-                    opacity: [0.3, 0.95, 0.3],
-                    scale: [0.8, 1.5, 0.8],
-                  }}
-                  transition={{
-                    duration: 3.2 + i * 0.5,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                    delay: i * 0.35,
-                  }}
-                />
-              ))}
+              {/* Title & Highlight */}
+              <h1
+                className={`text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold font-heading mb-2.5 sm:mb-4 leading-[1.12] tracking-tight transition-colors duration-300 ${
+                  isDark ? 'text-white' : 'text-gray-950'
+                }`}
+              >
+                {slide.title}{' '}
+                <span className={`text-transparent bg-clip-text bg-gradient-to-r ${slide.highlightGradient}`}>
+                  {slide.highlight}
+                </span>
+              </h1>
 
-              {/* Soft directional gradient ONLY on the left for text readability - right and center remain bright and sunlit */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 via-40% to-transparent pointer-events-none" />
-            </div>
-          ) : (
-            /* Standard Slide Background */
-            <div className="relative w-full h-full">
-              <img
-                src={slide.image}
-                alt={slide.title}
-                decoding="async"
-                className="w-full h-full object-cover"
-              />
-              <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient}`} />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
-            </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+              {/* Subtitle */}
+              <p
+                className={`text-xs sm:text-base lg:text-lg mb-5 sm:mb-7 max-w-xl leading-relaxed line-clamp-2 sm:line-clamp-none transition-colors duration-300 ${
+                  isDark ? 'text-white/70' : 'text-gray-600'
+                }`}
+              >
+                {slide.subtitle}
+              </p>
 
-      {/* Content */}
-      <div className="relative z-10 w-full py-10 sm:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Left text column */}
-            <div className="lg:col-span-7 max-w-2xl">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={`content-${currentSlide}`}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -30 }}
-                  transition={{ duration: 0.5 }}
+              {/* Wobbler Model Switcher (Only on Wobbler slide) */}
+              {slide.isSpecial && (
+                <div
+                  className={`mb-5 p-1 rounded-2xl border backdrop-blur-md inline-flex items-center gap-1 transition-colors duration-300 ${
+                    isDark ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/10'
+                  }`}
                 >
-                  {/* Badge */}
-                  {slide.badge && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.1 }}
-                      className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-4 backdrop-blur-md shadow-sm"
-                    >
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${slide.badgeColor}`}>
-                        <FiSun className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '8s' }} />
-                        {slide.badge}
-                      </span>
-                    </motion.div>
-                  )}
-
-                  {/* Title & Highlight */}
-                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-3 leading-tight tracking-tight drop-shadow-md">
-                    {slide.title}{' '}
-                    <span className={`text-transparent bg-clip-text bg-gradient-to-r ${slide.highlightGradient || 'from-purple-400 to-pink-400'}`}>
-                      {slide.highlight}
-                    </span>
-                  </h1>
-
-                  {/* Subtitle */}
-                  <p className="text-base sm:text-lg lg:text-xl text-white/90 mb-5 max-w-xl leading-relaxed drop-shadow-sm">
-                    {slide.subtitle}
-                  </p>
-
-                  {/* Interactive Variant Tabs for Solar Wobbler */}
-                  {slide.isSpecial && (
-                    <div className="mb-6">
-                      <p className="text-xs text-amber-300 font-bold uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                        <FiSun className="w-3.5 h-3.5 text-amber-400" />
-                        Available Models (Real Photos · Natural Light):
-                      </p>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {WOBBLER_VARIANTS.map((v, idx) => {
-                          const isActive = activeWobblerIndex === idx;
-                          return (
-                            <button
-                              key={v.id}
-                              type="button"
-                              onClick={() => {
-                                if (!isSwiping.current) setActiveWobblerIndex(idx);
-                              }}
-                              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all duration-300 flex items-center gap-2 cursor-pointer ${
-                                isActive
-                                  ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-gray-950 shadow-lg shadow-amber-500/40 scale-105 ring-2 ring-amber-300'
-                                  : 'bg-black/50 text-amber-100 border border-amber-300/40 hover:bg-black/70 hover:text-white'
-                              }`}
-                            >
-                              <span>{v.badge}</span>
-                              {isActive && <span className="w-2 h-2 rounded-full bg-gray-950 animate-ping" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Feature Bullets for Solar Wobbler */}
-                  {slide.features && (
-                    <div className="grid grid-cols-2 gap-2.5 mb-7 max-w-lg">
-                      {slide.features.map((feat, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-xs sm:text-sm text-amber-100 font-medium">
-                          <span className="w-4 h-4 rounded-full bg-amber-500/30 text-amber-300 flex items-center justify-center flex-shrink-0">
-                            <FiCheck className="w-3 h-3" />
-                          </span>
-                          <span>{feat}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* CTA Buttons */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5">
-                    <Link
-                      to={slide.ctaLink}
-                      onClick={(e) => {
-                        if (isSwiping.current) e.preventDefault();
-                      }}
-                      className={`inline-flex items-center justify-center gap-2 px-8 py-4 font-bold rounded-full transition-all duration-300 hover:scale-105 min-h-[50px] shadow-lg ${
-                        slide.isSpecial
-                          ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-500 text-gray-950 font-black shadow-amber-500/40 hover:shadow-amber-500/70'
-                          : 'bg-white text-gray-950 hover:bg-gray-100 shadow-white/10'
-                      }`}
-                    >
-                      <span>{slide.cta}</span>
-                      <FiArrowRight className="w-5 h-5" />
-                    </Link>
-
-                    {slide.secondaryCta && (
-                      <Link
-                        to={slide.secondaryCtaLink}
-                        onClick={(e) => {
-                          if (isSwiping.current) e.preventDefault();
+                  {WOBBLER_MODELS.map((model, idx) => {
+                    const isSelected = activeWobblerIndex === idx;
+                    return (
+                      <button
+                        key={model.id}
+                        type="button"
+                        onClick={() => {
+                          if (!isSwiping.current) setActiveWobblerIndex(idx);
                         }}
-                        className={`inline-flex items-center justify-center gap-2 px-7 py-4 font-bold rounded-full transition-all duration-300 min-h-[50px] ${
-                          slide.isSpecial
-                            ? 'border-2 border-amber-300 text-white bg-black/30 hover:bg-amber-400/20 hover:border-amber-200'
-                            : 'border-2 border-white/80 text-white hover:bg-white hover:text-gray-950'
+                        className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-gray-950 shadow-md font-bold'
+                            : isDark
+                            ? 'text-white/70 hover:text-white'
+                            : 'text-gray-700 hover:text-gray-950'
                         }`}
                       >
-                        {slide.isSpecial && <FiZap className="w-4 h-4 text-amber-400" />}
-                        <span>{slide.secondaryCta}</span>
-                      </Link>
-                    )}
-                  </div>
+                        <span>{model.badge}</span>
+                        {isSelected && <FiCheck className="w-3.5 h-3.5" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-                  {/* Trust Badges */}
-                  <div className="mt-7 flex flex-wrap gap-3 text-xs sm:text-sm text-white/85 font-medium">
-                    <span className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-md border border-white/10">
-                      <span>🚚</span> Cash on Delivery
-                    </span>
-                    <span className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-md border border-white/10">
-                      <span>💳</span> bKash / Nagad
-                    </span>
-                    <span className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-md border border-white/10">
-                      <span>🇧🇩</span> Fast Delivery in BD
-                    </span>
-                  </div>
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2.5 sm:gap-4">
+                <Link
+                  to={slide.ctaLink}
+                  onClick={(e) => {
+                    if (isSwiping.current) e.preventDefault();
+                  }}
+                  className={`inline-flex items-center justify-center gap-1.5 sm:gap-2 px-5 sm:px-8 py-2.5 sm:py-3.5 rounded-full font-semibold text-xs sm:text-base transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-md cursor-pointer ${
+                    slide.isSpecial
+                      ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-500 text-gray-950 font-bold shadow-amber-500/30 hover:shadow-amber-500/50'
+                      : isDark
+                      ? 'bg-white text-gray-950 hover:bg-gray-100 shadow-white/10'
+                      : 'bg-gray-950 text-white hover:bg-gray-800 shadow-gray-400/40'
+                  }`}
+                >
+                  <span>{slide.cta}</span>
+                  <FiArrowRight className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                </Link>
 
-                  {/* Mobile Swipe Hint */}
-                  <div className="sm:hidden mt-5 flex items-center justify-center gap-2 text-white/45 text-[11px] font-medium tracking-wide select-none pointer-events-none">
-                    <span className="animate-pulse">←</span>
-                    <span>Swipe left or right to change slides</span>
-                    <span className="animate-pulse">→</span>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {/* Right column: Authentic Dual Showcase for Desktop - Light & Sunlit */}
-            {slide.isSpecial && (
-              <div className="lg:col-span-5 hidden lg:flex items-center justify-center relative">
-                {/* Circular Radiant Backdrop Solar Glow */}
-                <div className="absolute -inset-10 bg-gradient-to-br from-yellow-300/35 via-amber-400/25 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-                {/* Container for Main + Secondary Card */}
-                <div className="relative flex items-center justify-center w-full">
-                  {/* Secondary Card (Background Preview of other model) */}
-                  <div
-                    onClick={() => {
-                      if (!isSwiping.current) setActiveWobblerIndex(otherWobblerIndex);
-                    }}
-                    className="absolute -right-2 top-4 w-52 h-[350px] rounded-2xl overflow-hidden border-2 border-amber-300/50 opacity-85 hover:opacity-100 transition-all duration-300 cursor-pointer shadow-2xl transform rotate-6 hover:rotate-2 hover:scale-105 z-0 bg-stone-900/50 backdrop-blur-md"
-                    title={`Click to view ${otherWobbler.name}`}
-                  >
-                    <img
-                      src={otherWobbler.image}
-                      alt={otherWobbler.name}
-                      decoding="async"
-                      className="w-full h-full object-cover object-center"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                    <div className="absolute bottom-3 inset-x-2 text-center">
-                      <span className="inline-block px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[10px] font-extrabold uppercase shadow-sm">
-                        Switch Model
-                      </span>
-                      <p className="text-xs font-bold text-white mt-1">{otherWobbler.name}</p>
-                    </div>
-                  </div>
-
-                  {/* Primary Active Card with Authentic Wobbler Subject & Kinetic Sway */}
+                {slide.secondaryCta && (
                   <Link
-                    to="/solar-wobbler"
+                    to={slide.secondaryCtaLink}
                     onClick={(e) => {
                       if (isSwiping.current) e.preventDefault();
                     }}
-                    className="group relative z-10 block cursor-pointer"
+                    className={`inline-flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-full font-medium text-xs sm:text-base border backdrop-blur-md transition-all duration-200 cursor-pointer ${
+                      isDark
+                        ? 'text-white/90 bg-white/5 hover:bg-white/10 border-white/15 hover:border-white/30'
+                        : 'text-gray-800 bg-white/80 hover:bg-white border-gray-300 hover:border-gray-400 shadow-sm'
+                    }`}
                   >
-                    <motion.div
-                      key={`card-${activeWobbler.id}`}
-                      initial={{ scale: 0.95, opacity: 0.8 }}
-                      animate={{
-                        scale: 1,
-                        opacity: 1,
-                        rotate: [-2.5, 2.5, -2.5],
-                        y: [-5, 5, -5],
-                      }}
-                      transition={{
-                        scale: { duration: 0.4 },
-                        opacity: { duration: 0.4 },
-                        rotate: { duration: 3.2, repeat: Infinity, ease: 'easeInOut' },
-                        y: { duration: 3.2, repeat: Infinity, ease: 'easeInOut' },
-                      }}
-                      className="relative w-64 h-[400px] xl:w-72 xl:h-[440px] rounded-3xl p-2 bg-white/25 border-2 border-yellow-400 backdrop-blur-md shadow-2xl shadow-yellow-500/40 overflow-hidden"
+                    {slide.isSpecial && <FiZap className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-amber-500" />}
+                    <span>{slide.secondaryCta}</span>
+                  </Link>
+                )}
+              </div>
+
+              {/* Minimal Trust Strip (Delivery within 2 to 5 days, no wood specs, no ratings) */}
+              <div
+                className={`mt-6 sm:mt-10 pt-4 sm:pt-6 border-t flex flex-wrap items-center gap-3.5 sm:gap-6 text-[11px] sm:text-xs font-medium transition-colors duration-300 ${
+                  isDark ? 'border-white/10 text-white/60' : 'border-gray-200 text-gray-600'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <FiTruck className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${isDark ? 'text-white/80' : 'text-gray-800'}`} />
+                  <span>Delivery within 2 to 5 days</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <FiShield className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${isDark ? 'text-white/80' : 'text-gray-800'}`} />
+                  <span>Cash on Delivery</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span>🇧🇩</span>
+                  <span>All 64 Districts</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Sleek Modern Showcase Card (No wooden frame, no mat board) */}
+            <div className="lg:col-span-5 flex items-center justify-center mt-4 sm:mt-6 lg:mt-0">
+              <div className="relative w-full max-w-[210px] sm:max-w-[280px] lg:max-w-sm xl:max-w-md aspect-[4/5]">
+                
+                {/* ─────────────────────────────────────────────────────────────
+                    STAGE A: POSTER SLIDES — MODERN BORDERLESS CARD
+                    Solid wooden frame & passe-partout mat board DELETED
+                    ───────────────────────────────────────────────────────────── */}
+                <div
+                  className={`absolute inset-0 transition-opacity duration-500 ${
+                    !slide.isSpecial ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
+                  }`}
+                >
+                  {/* Ambient Soft Glow Behind Card */}
+                  <div
+                    className={`absolute -inset-3 rounded-3xl blur-2xl transition-opacity duration-700 pointer-events-none ${
+                      isDark ? 'bg-purple-600/20 opacity-60' : 'bg-gray-400/20 opacity-30'
+                    }`}
+                  />
+
+                  {/* Physical Picture Frame with Gallery Moulding */}
+                  <div
+                    className={`relative w-full h-full p-2 sm:p-3.5 rounded-sm sm:rounded-md transition-all duration-500 ${
+                      isDark
+                        ? 'bg-[#18181b] border-[8px] sm:border-[12px] border-[#121214] ring-1 ring-white/15 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.85)]'
+                        : 'bg-[#FDFBF7] border-[8px] sm:border-[12px] border-[#1c1917] ring-1 ring-black/10 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.25)]'
+                    }`}
+                  >
+                    {/* Passe-Partout / Museum Mat Board */}
+                    <div
+                      className={`relative w-full h-full p-1.5 sm:p-2.5 rounded-[2px] transition-colors duration-500 overflow-hidden ${
+                        isDark ? 'bg-[#1f1f23] shadow-inner' : 'bg-[#FAF8F5] shadow-inner'
+                      }`}
                     >
-                      {/* Inner Image Container preserving 100% of the authentic subject */}
-                      <div className="relative w-full h-full rounded-2xl overflow-hidden bg-stone-900">
+                      {/* Inner Framed Poster Window */}
+                      <div className="relative w-full h-full overflow-hidden border border-black/20 shadow-md">
+                        {slides.filter((s) => !s.isSpecial).map((s) => {
+                          const isCurrent = s.id === slide.id;
+                          return (
+                            <div
+                              key={s.id}
+                              className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
+                                isCurrent ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
+                              }`}
+                            >
+                              <img
+                                src={s.image}
+                                alt={s.frameTitle}
+                                decoding="async"
+                                className="w-full h-full object-cover object-center"
+                              />
+                            </div>
+                          );
+                        })}
+
+                        {/* Acrylic Glass Specular Glare */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/12 to-transparent pointer-events-none z-20" />
+
+                        {/* Plaque Gradient Vignette */}
+                        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none z-20" />
+
+                        {/* Museum Plaque */}
+                        <div className="absolute bottom-2 inset-x-2 z-30 flex items-center justify-between p-1.5 sm:p-2 rounded-lg bg-black/75 backdrop-blur-md border border-white/15 text-left text-white shadow-md">
+                          <div className="min-w-0 pr-1.5">
+                            <p className="text-[9px] sm:text-[11px] font-bold tracking-wide truncate">
+                              {slide.frameTitle}
+                            </p>
+                            <p className="text-[8px] sm:text-[9px] text-white/70 truncate">
+                              {slide.frameSub}
+                            </p>
+                          </div>
+                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded text-[8px] sm:text-[9px] font-bold uppercase tracking-wider bg-white/15 text-white border border-white/20">
+                            Framed Art
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ─────────────────────────────────────────────────────────────
+                    STAGE B: SOLAR WOBBLER — FRAMELESS KINETIC ART SHOWCASE
+                    ───────────────────────────────────────────────────────────── */}
+                <div
+                  className={`absolute inset-0 transition-opacity duration-500 ${
+                    slide.isSpecial ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
+                  }`}
+                >
+                  {/* Ambient Golden Sunburst Glow */}
+                  <div className="absolute -inset-4 rounded-3xl bg-gradient-to-tr from-amber-500/30 via-yellow-400/20 to-transparent blur-2xl pointer-events-none" />
+
+                  {/* Frameless Kinetic Card */}
+                  <div className="relative w-full h-full rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-amber-400/40 bg-gradient-to-b from-amber-500/10 via-black/40 to-black/80 backdrop-blur-xl shadow-2xl shadow-amber-500/20 p-2 sm:p-3 flex flex-col justify-between">
+                    
+                    {/* Living Kinetic Motion Visual (Gentle Pendulum Sway) */}
+                    <div className="relative w-full flex-1 rounded-xl sm:rounded-2xl overflow-hidden bg-stone-900/60 flex items-center justify-center">
+                      <motion.div
+                        animate={{
+                          rotate: [-2, 2, -2],
+                          y: [-2, 2, -2],
+                        }}
+                        transition={{
+                          duration: 3.5,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                        }}
+                        className="w-full h-full"
+                      >
                         <img
                           src={activeWobbler.image}
                           alt={activeWobbler.name}
                           decoding="async"
-                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                          className="w-full h-full object-cover object-center"
                         />
+                      </motion.div>
 
-                        {/* Minimal bottom vignette so text/badges pop without dimming the photo */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
-
-                        {/* Top Live Sunlight Badge */}
-                        <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md border border-amber-300/60 rounded-full px-3 py-1 flex items-center gap-1.5 text-xs text-yellow-300 font-bold shadow-md">
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                          <span>Natural Sunlight Active</span>
-                        </div>
-
-                        {/* Bottom Label & Call to action */}
-                        <div className="absolute bottom-3 inset-x-3 text-center">
-                          <span className="inline-block px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-black text-[11px] font-black uppercase tracking-wider mb-1 shadow-sm">
-                            {activeWobbler.name}
-                          </span>
-                          <p className="text-xs text-white/95 font-semibold">100% Real Photo · Window Sill</p>
-                          <p className="text-[11px] text-amber-300 font-bold mt-0.5">Click to Explore Details →</p>
-                        </div>
+                      {/* Natural Sunlight Pill Badge */}
+                      <div className="absolute top-2.5 left-2.5 bg-black/65 backdrop-blur-md border border-amber-300/40 rounded-full px-2.5 py-0.5 flex items-center gap-1.5 text-[9px] sm:text-[10px] text-yellow-300 font-bold shadow-md">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>Real Sunlight Active</span>
                       </div>
-                    </motion.div>
-                  </Link>
+
+                      {/* Frameless Soft Vignette */}
+                      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/85 via-black/40 to-transparent pointer-events-none" />
+
+                      {/* Model Tag Plaque */}
+                      <div className="absolute bottom-2.5 inset-x-2.5 z-20 flex items-center justify-between p-2 rounded-xl bg-black/75 backdrop-blur-md border border-amber-400/30 text-left text-white shadow-md">
+                        <div>
+                          <p className="text-[10px] sm:text-xs font-bold text-amber-300">
+                            {activeWobbler.name}
+                          </p>
+                          <p className="text-[8px] sm:text-[9px] text-white/70">
+                            Zero Batteries · Endless Sway
+                          </p>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-bold uppercase tracking-wider bg-gradient-to-r from-amber-400 to-orange-500 text-gray-950 shadow-sm">
+                          Kinetic Art
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
               </div>
-            )}
+            </div>
+
           </div>
         </div>
       </div>
 
-      {/* Navigation Arrows - Hidden on mobile, visible on sm and up */}
+      {/* Desktop Chevron Navigation */}
       <button
         onClick={prevSlide}
-        className="hidden sm:flex absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 p-3 bg-black/40 hover:bg-black/70 text-white backdrop-blur-md rounded-full border border-white/10 hover:border-white/30 transition-all hover:scale-110 active:scale-95 cursor-pointer items-center justify-center"
+        className={`hidden md:flex absolute left-4 lg:left-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 lg:w-11 lg:h-11 rounded-full border backdrop-blur-md transition-all hover:scale-105 active:scale-95 cursor-pointer items-center justify-center ${
+          isDark
+            ? 'bg-white/5 hover:bg-white/15 text-white/80 hover:text-white border-white/10'
+            : 'bg-white/80 hover:bg-white text-gray-800 border-gray-300 shadow-md'
+        }`}
         aria-label="Previous slide"
       >
-        <FiChevronLeft className="w-6 h-6" />
-      </button>
-      <button
-        onClick={nextSlide}
-        className="hidden sm:flex absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 p-3 bg-black/40 hover:bg-black/70 text-white backdrop-blur-md rounded-full border border-white/10 hover:border-white/30 transition-all hover:scale-110 active:scale-95 cursor-pointer items-center justify-center"
-        aria-label="Next slide"
-      >
-        <FiChevronRight className="w-6 h-6" />
+        <FiChevronLeft className="w-5 h-5" />
       </button>
 
-      {/* Dots Indicator */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-        {slides.map((s, index) => (
-          <button
-            key={s.id || index}
-            onClick={() => goToSlide(index)}
-            className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-              index === currentSlide
-                ? s.isSpecial
-                  ? 'w-10 bg-gradient-to-r from-amber-400 to-orange-500 shadow-md shadow-amber-500/50'
-                  : 'w-10 bg-white shadow-md'
-                : 'w-2.5 bg-white/40 hover:bg-white/70'
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
+      <button
+        onClick={nextSlide}
+        className={`hidden md:flex absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 lg:w-11 lg:h-11 rounded-full border backdrop-blur-md transition-all hover:scale-105 active:scale-95 cursor-pointer items-center justify-center ${
+          isDark
+            ? 'bg-white/5 hover:bg-white/15 text-white/80 hover:text-white border-white/10'
+            : 'bg-white/80 hover:bg-white text-gray-800 border-gray-300 shadow-md'
+        }`}
+        aria-label="Next slide"
+      >
+        <FiChevronRight className="w-5 h-5" />
+      </button>
+
+      {/* Modern Control Bar: Dots + Pause/Play */}
+      <div
+        className={`absolute bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 rounded-full border backdrop-blur-xl shadow-lg transition-colors duration-300 ${
+          isDark ? 'bg-black/50 border-white/10 text-white' : 'bg-white/80 border-black/10 text-gray-900 shadow-md'
+        }`}
+      >
+        <button
+          onClick={() => setIsPaused((v) => !v)}
+          className={`p-1 sm:p-1.5 rounded-full transition-colors cursor-pointer ${
+            isDark ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-gray-600 hover:text-gray-950 hover:bg-black/5'
+          }`}
+          aria-label={isPaused ? 'Resume autoplay' : 'Pause autoplay'}
+          title={isPaused ? 'Resume' : 'Pause'}
+        >
+          {isPaused ? <FiPlay className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <FiPause className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+        </button>
+
+        <div className={`h-2.5 sm:h-3 w-px mx-0.5 ${isDark ? 'bg-white/15' : 'bg-black/15'}`} />
+
+        {slides.map((s, index) => {
+          const isActive = index === currentSlide;
+          return (
+            <button
+              key={s.id}
+              onClick={() => goToSlide(index)}
+              className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                isActive
+                  ? isDark
+                    ? 'w-5 sm:w-7 bg-white shadow-sm'
+                    : 'w-5 sm:w-7 bg-gray-950 shadow-sm'
+                  : isDark
+                  ? 'w-1.5 sm:w-2 bg-white/30 hover:bg-white/50'
+                  : 'w-1.5 sm:w-2 bg-black/20 hover:bg-black/40'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          );
+        })}
       </div>
     </section>
   );
