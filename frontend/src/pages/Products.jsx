@@ -755,6 +755,10 @@ export default function Products() {
                       ? (standardSizes.find(s => s.price === lowestPrice)?.originalPrice || Math.round(lowestPrice / 0.75))
                       : (product.originalPrice || Math.round(lowestPrice / 0.75));
 
+                    const isWobbler = product.productType === 'wobbler' || product.category === 'solar-wobbler' || product.category === 'wobbler';
+                    const stock = typeof product.stock === 'number' ? product.stock : (isWobbler ? 0 : 100);
+                    const isOutOfStock = stock <= 0;
+
                     return (
                       <StaggerItem key={product._id}>
                         <motion.div
@@ -767,9 +771,11 @@ export default function Products() {
                             <div className={`overflow-hidden rounded-2xl sm:rounded-2xl h-full flex flex-col relative transition-all duration-300 ${darkMode
                                 ? 'bg-[#1a1a2e] border border-white/10 shadow-lg shadow-black/30'
                                 : 'bg-white border border-gray-100 shadow-md shadow-purple-100/40'
-                              }`}>
+                              } ${isOutOfStock ? 'opacity-85' : ''}`}>
                               {/* Image Section */}
-                              <div className="relative aspect-[3/4] overflow-hidden">
+                              <div className={`relative aspect-[3/4] overflow-hidden ${
+                                isWobbler ? (darkMode ? 'bg-amber-500/[0.04]' : 'bg-amber-50/60') : ''
+                              }`}>
                                 <picture>
                                   {product.images[0]?.urls?.thumbnail && (
                                     <source
@@ -783,31 +789,57 @@ export default function Products() {
                                     alt={product.name}
                                     loading="lazy"
                                     decoding="async"
-                                    className="absolute inset-0 w-full h-full object-contain transition-transform duration-500 ease-out"
+                                    className={`absolute inset-0 w-full h-full ${
+                                      isWobbler ? 'object-contain p-2.5 drop-shadow-md' : 'object-contain'
+                                    } transition-transform duration-500 ease-out ${
+                                      isOutOfStock ? 'grayscale-[35%]' : 'group-hover:scale-105'
+                                    }`}
                                   />
                                 </picture>
 
-                                {/* -25% Discount Badge - Top Right */}
-                                <motion.div
-                                  initial={{ scale: 0, rotate: -15 }}
-                                  animate={{ scale: 1, rotate: 0 }}
-                                  transition={{ type: 'spring', stiffness: 260, damping: 14, delay: index * 0.05 }}
-                                  className="absolute top-2 right-2 sm:top-3 sm:right-3 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black bg-gradient-to-r from-pink-500 to-orange-400 text-white shadow-lg shadow-pink-500/40 z-10"
-                                >
-                                  -25%
-                                </motion.div>
+                                {/* Badges Container - Top Left */}
+                                <div className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 flex flex-col gap-1 z-10">
+                                  {isOutOfStock ? (
+                                    <span className="bg-red-600/90 text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold shadow-md backdrop-blur-sm">
+                                      Out of Stock
+                                    </span>
+                                  ) : stock <= 5 ? (
+                                    <span className="bg-amber-500 text-black px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black shadow-md flex items-center gap-1">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+                                      Only {stock} Left
+                                    </span>
+                                  ) : null}
 
-                                {product.customizable && (
-                                  <motion.span
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    className={`absolute top-2 left-2 sm:top-3 sm:left-3 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[9px] sm:text-xs font-bold shadow-lg z-10 ${darkMode
-                                        ? 'bg-gradient-to-r from-moon-mystical to-moon-gold'
-                                        : 'bg-gradient-to-r from-purple-600 to-pink-600'
-                                      }`}
+                                  {isWobbler && (
+                                    <span className="bg-amber-500/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold backdrop-blur-md">
+                                      ☀️ Kinetic
+                                    </span>
+                                  )}
+
+                                  {product.customizable && !isOutOfStock && (
+                                    <motion.span
+                                      initial={{ scale: 0 }}
+                                      animate={{ scale: 1 }}
+                                      className={`text-white px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold shadow-lg ${darkMode
+                                          ? 'bg-gradient-to-r from-moon-mystical to-moon-gold'
+                                          : 'bg-gradient-to-r from-purple-600 to-pink-600'
+                                        }`}
+                                    >
+                                      ⚡ Custom
+                                    </motion.span>
+                                  )}
+                                </div>
+
+                                {/* -25% Discount Badge - Top Right */}
+                                {!isOutOfStock && (
+                                  <motion.div
+                                    initial={{ scale: 0, rotate: -15 }}
+                                    animate={{ scale: 1, rotate: 0 }}
+                                    transition={{ type: 'spring', stiffness: 260, damping: 14, delay: index * 0.05 }}
+                                    className="absolute top-2 right-2 sm:top-3 sm:right-3 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-black bg-gradient-to-r from-pink-500 to-orange-400 text-white shadow-lg shadow-pink-500/40 z-10"
                                   >
-                                    ⚡ Custom
-                                  </motion.span>
+                                    -25%
+                                  </motion.div>
                                 )}
 
                                 {/* Hover Overlay - Desktop only */}
@@ -817,24 +849,51 @@ export default function Products() {
                                     whileInView={{ y: 0, opacity: 1 }}
                                     className="font-bold text-sm tracking-wider text-white drop-shadow-lg"
                                   >
-                                    View Details →
+                                    {isOutOfStock ? 'View Details' : 'View Details →'}
                                   </motion.span>
                                 </div>
                               </div>
 
                               {/* Product Info Section */}
-                              <div className={`p-2.5 sm:p-3.5 flex-1 flex flex-col ${darkMode ? 'border-t border-white/5' : 'border-t border-gray-50'
+                              <div className={`p-2.5 sm:p-3.5 flex-1 flex flex-col justify-between ${darkMode ? 'border-t border-white/5' : 'border-t border-gray-50'
                                 }`}>
-                                <h3 className={`font-bold text-[11px] sm:text-[13px] leading-snug line-clamp-1 mb-1.5 sm:mb-2 uppercase tracking-wide ${darkMode ? 'text-white/90' : 'text-gray-900'
-                                  }`}>
-                                  {cleanProductName(product.name)}
-                                </h3>
+                                <div>
+                                  <h3 className={`font-bold text-[11px] sm:text-[13px] leading-snug line-clamp-1 mb-1 uppercase tracking-wide ${darkMode ? 'text-white/90' : 'text-gray-900'
+                                    }`}>
+                                    {cleanProductName(product.name)}
+                                  </h3>
+
+                                  {/* Available Stocks Indicator */}
+                                  <div className="flex items-center gap-1.5 mb-2">
+                                    {isOutOfStock ? (
+                                      <span className="text-[10px] sm:text-[11px] font-semibold text-red-500 flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                        Out of Stock
+                                      </span>
+                                    ) : stock <= 5 ? (
+                                      <span className="text-[10px] sm:text-[11px] font-bold text-amber-500 dark:text-amber-400 flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                        Only {stock} available
+                                      </span>
+                                    ) : (
+                                      <span className={`text-[10px] sm:text-[11px] font-medium flex items-center gap-1 ${
+                                        darkMode ? 'text-emerald-400' : 'text-emerald-600'
+                                      }`}>
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        {stock} in stock
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
 
                                 <div className="flex flex-col gap-0.5 mt-auto">
-                                  <span className={`text-base sm:text-lg font-black ${darkMode
+                                  <span className={`text-base sm:text-lg font-black ${
+                                    isOutOfStock
+                                      ? 'text-gray-400'
+                                      : darkMode
                                       ? 'text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400'
                                       : 'text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600'
-                                    }`}>
+                                  }`}>
                                     ৳{lowestPrice}
                                   </span>
                                   <span className={`text-[10px] sm:text-xs line-through ${darkMode ? 'text-white/25' : 'text-gray-400'

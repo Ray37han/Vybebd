@@ -93,54 +93,114 @@ function WobblerCard({ product, darkMode: dm, onBuy }) {
   const imgUrl = product.images?.[0]?.urls?.medium || product.images?.[0]?.urls?.thumbnail || product.images?.[0]?.url || '';
   const name = product.name?.replace(/\s*\|\|\s*#\d+/g, '').replace(/\s*#\d+$/, '').trim();
   const hasDiscount = product.originalPrice && product.originalPrice > product.basePrice;
+  const stock = typeof product.stock === 'number' ? product.stock : 0;
+  const isOutOfStock = stock <= 0;
 
   return (
     <motion.div
-      whileHover={{ y: -6 }}
-      className={`group relative rounded-2xl overflow-hidden transition-all duration-300 ${
+      whileHover={{ y: isOutOfStock ? 0 : -6 }}
+      className={`group relative rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between ${
         dm ? 'bg-moon-space/50 border border-moon-silver/10 hover:border-yellow-400/40 hover:shadow-xl hover:shadow-yellow-500/10'
           : 'bg-white border border-gray-100 hover:border-yellow-300 hover:shadow-xl hover:shadow-yellow-500/10'
-      }`}
+      } ${isOutOfStock ? 'opacity-85' : ''}`}
     >
-      <Link to={`/products/${product._id}`} className="block relative overflow-hidden aspect-square">
+      <Link to={`/products/${product._id}`} className="block relative overflow-hidden aspect-square bg-gradient-to-b from-amber-500/5 to-transparent p-3">
         {imgUrl ? (
-          <img src={imgUrl} alt={name} loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <img
+            src={imgUrl}
+            alt={name}
+            loading="lazy"
+            className={`w-full h-full object-contain transition-transform duration-500 drop-shadow-md ${
+              isOutOfStock ? 'grayscale-[40%]' : 'group-hover:scale-105'
+            }`}
+          />
         ) : (
           <div className={`w-full h-full flex items-center justify-center ${dm ? 'bg-moon-midnight' : 'bg-yellow-50'}`}>
             <FiSun className="w-16 h-16 text-yellow-400" strokeWidth={1} />
           </div>
         )}
-        {hasDiscount && (
-          <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-            {Math.round(((product.originalPrice - product.basePrice) / product.originalPrice) * 100)}% OFF
-          </div>
-        )}
-        {product.newArrival && !hasDiscount && (
-          <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">NEW</div>
-        )}
-      </Link>
-      <div className="p-3 sm:p-4">
-        <Link to={`/products/${product._id}`}>
-          <h3 className={`font-semibold text-sm sm:text-base line-clamp-2 mb-1 hover:text-yellow-600 transition-colors ${dm ? 'text-white' : 'text-gray-900'}`}>{name}</h3>
-        </Link>
-        {product.rating?.count > 0 && (
-          <div className="flex items-center gap-1 mb-2">
-            <FiStar className="w-3 h-3 text-yellow-400 fill-current" />
-            <span className={`text-xs ${dm ? 'text-moon-silver' : 'text-gray-500'}`}>{product.rating.average.toFixed(1)} ({product.rating.count})</span>
-          </div>
-        )}
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-base sm:text-lg font-bold text-orange-500">৳{product.basePrice}</span>
-          {hasDiscount && <span className={`text-xs line-through ${dm ? 'text-moon-silver/50' : 'text-gray-400'}`}>৳{product.originalPrice}</span>}
+
+        {/* Status Badges */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+          {isOutOfStock ? (
+            <span className="bg-red-500 text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
+              Out of Stock
+            </span>
+          ) : stock <= 5 ? (
+            <span className="bg-amber-500 text-black text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full shadow-md flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
+              Only {stock} Left
+            </span>
+          ) : (
+            <span className="bg-emerald-500/90 text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
+              In Stock
+            </span>
+          )}
+
+          {hasDiscount && !isOutOfStock && (
+            <span className="bg-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
+              {Math.round(((product.originalPrice - product.basePrice) / product.originalPrice) * 100)}% OFF
+            </span>
+          )}
         </div>
-        <motion.button
-          onClick={() => onBuy(product)}
-          whileTap={{ scale: 0.97 }}
-          className="w-full py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:shadow-md hover:shadow-orange-500/30 transition-all flex items-center justify-center gap-2 min-h-[44px]"
-        >
-          <FiShoppingCart className="w-4 h-4" />
-          {product.sizes?.length > 0 ? 'Choose Options' : 'Order Now'}
-        </motion.button>
+
+        <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-400/30 backdrop-blur-md">
+          ☀️ Kinetic
+        </span>
+      </Link>
+
+      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
+        <div>
+          <Link to={`/products/${product._id}`}>
+            <h3 className={`font-semibold text-sm sm:text-base line-clamp-2 mb-1 hover:text-yellow-500 transition-colors ${dm ? 'text-white' : 'text-gray-900'}`}>{name}</h3>
+          </Link>
+
+          {/* Stock availability line */}
+          <div className="flex items-center gap-1.5 text-xs mb-2">
+            {isOutOfStock ? (
+              <span className="text-red-400 font-semibold flex items-center gap-1 text-[11px] sm:text-xs">
+                <span className="w-2 h-2 rounded-full bg-red-500" /> Currently Unavailable
+              </span>
+            ) : stock <= 5 ? (
+              <span className="text-amber-500 dark:text-amber-400 font-bold flex items-center gap-1 text-[11px] sm:text-xs">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                Only {stock} items left in stock
+              </span>
+            ) : (
+              <span className="text-emerald-500 dark:text-emerald-400 font-medium flex items-center gap-1 text-[11px] sm:text-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                {stock} units available
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-base sm:text-lg font-bold text-orange-500">৳{product.basePrice}</span>
+            {hasDiscount && <span className={`text-xs line-through ${dm ? 'text-moon-silver/50' : 'text-gray-400'}`}>৳{product.originalPrice}</span>}
+          </div>
+
+          {isOutOfStock ? (
+            <button
+              disabled
+              className={`w-full py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 min-h-[44px] cursor-not-allowed ${
+                dm ? 'bg-white/5 text-white/30 border border-white/10' : 'bg-gray-100 text-gray-400 border border-gray-200'
+              }`}
+            >
+              Out of Stock
+            </button>
+          ) : (
+            <motion.button
+              onClick={() => onBuy(product)}
+              whileTap={{ scale: 0.97 }}
+              className="w-full py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:shadow-md hover:shadow-orange-500/30 transition-all flex items-center justify-center gap-2 min-h-[44px]"
+            >
+              <FiShoppingCart className="w-4 h-4" />
+              Order Now
+            </motion.button>
+          )}
+        </div>
       </div>
     </motion.div>
   );

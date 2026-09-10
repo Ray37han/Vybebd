@@ -61,7 +61,7 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       const clearCartAndReload = () => {
-        try { localStorage.removeItem('cart-storage'); } catch(e) {}
+        try { localStorage.removeItem('cart-storage'); } catch (e) { }
         window.location.href = '/';
       };
       return (
@@ -89,123 +89,123 @@ function App() {
 
   return (
     <ErrorBoundary>
-    <AnalyticsProvider>
-    <SmoothScroll>
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-grow pt-16">
-        <VybePageTransitions location={location}>
-          <Suspense fallback={<LoadingStore text="Loading page..." />}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/products/:id" element={<ProductDetail />} />
-              {/* New category landing pages */}
-              <Route path="/home-decor" element={<HomeDecor />} />
-              <Route path="/solar-wobbler" element={<SolarWobbler />} />
-              <Route path="/customize" element={<Customize />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="/terms-of-service" element={<TermsOfService />} />
-              
-              {/* Protected Routes */}
-              {/* Checkout – no auth required, pipeline-based */}
-              <Route path="/checkout" element={
-                <Suspense fallback={<CheckoutSkeleton />}>
-                  <Checkout />
-                </Suspense>
-              } />
-              <Route path="/quick-checkout" element={
-                <Suspense fallback={<CheckoutSkeleton />}>
-                  <Checkout />
-                </Suspense>
-              } />
-              <Route path="/order-success" element={
-                <Suspense fallback={<CheckoutSkeleton />}>
-                  <OrderSuccess />
-                </Suspense>
-              } />
-              <Route path="/order-confirmed" element={
-                <Suspense fallback={<CheckoutSkeleton />}>
-                  <OrderSuccess />
-                </Suspense>
-              } />
+      <AnalyticsProvider>
+        <SmoothScroll>
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-grow pt-16">
+              <VybePageTransitions location={location}>
+                <Suspense fallback={<LoadingStore text="Loading page..." />}>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/products" element={<Products />} />
+                    <Route path="/products/:id" element={<ProductDetail />} />
+                    {/* New category landing pages */}
+                    <Route path="/home-decor" element={<HomeDecor />} />
+                    <Route path="/solar-wobbler" element={<SolarWobbler />} />
+                    <Route path="/customize" element={<Customize />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/terms-of-service" element={<TermsOfService />} />
 
-              <Route path="/my-orders" element={
-                <ProtectedRoute>
-                  <MyOrders />
-                </ProtectedRoute>
-              } />
-              <Route path="/account" element={
-                <ProtectedRoute>
-                  <Account />
-                </ProtectedRoute>
-              } />
+                    {/* Protected Routes */}
+                    {/* Checkout – no auth required, pipeline-based */}
+                    <Route path="/checkout" element={
+                      <Suspense fallback={<CheckoutSkeleton />}>
+                        <Checkout />
+                      </Suspense>
+                    } />
+                    <Route path="/quick-checkout" element={
+                      <Suspense fallback={<CheckoutSkeleton />}>
+                        <Checkout />
+                      </Suspense>
+                    } />
+                    <Route path="/order-success" element={
+                      <Suspense fallback={<CheckoutSkeleton />}>
+                        <OrderSuccess />
+                      </Suspense>
+                    } />
+                    <Route path="/order-confirmed" element={
+                      <Suspense fallback={<CheckoutSkeleton />}>
+                        <OrderSuccess />
+                      </Suspense>
+                    } />
 
-              {/* Admin Routes */}
-              <Route path="/admin" element={
-                <ProtectedRoute adminOnly>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/products" element={
-                <ProtectedRoute adminOnly>
-                  <AdminProducts />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/orders" element={
-                <ProtectedRoute adminOnly>
-                  <DeliveryDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/users" element={
-                <ProtectedRoute adminOnly>
-                  <AdminUsers />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/featured-posters" element={
-                <ProtectedRoute adminOnly>
-                  <AdminFeaturedPosters />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/hero-items" element={
-                <ProtectedRoute adminOnly>
-                  <AdminHeroItems />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/custom-orders" element={
-                <ProtectedRoute adminOnly>
-                  <AdminCustomOrders />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/custom-approvals" element={
-                <ProtectedRoute adminOnly>
-                  <AdminCustomApprovals />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/bulk-import" element={
-                <ProtectedRoute adminOnly>
-                  <AdminBulkImport />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/analytics" element={
-                <ProtectedRoute adminOnly>
-                  <AdminAnalytics />
-                </ProtectedRoute>
-              } />
-              {/* 404 Catch-all */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </VybePageTransitions>
-      </main>
-      <Footer />
-      <BackToTop />
-    </div>
-    </SmoothScroll>
-    </AnalyticsProvider>
+                    <Route path="/my-orders" element={
+                      <ProtectedRoute>
+                        <MyOrders />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/account" element={
+                      <ProtectedRoute>
+                        <Account />
+                      </ProtectedRoute>
+                    } />
+
+                    {/* Admin Routes */}
+                    <Route path="/admin" element={
+                      <ProtectedRoute adminOnly>
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/products" element={
+                      <ProtectedRoute adminOnly>
+                        <AdminProducts />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/orders" element={
+                      <ProtectedRoute adminOnly>
+                        <DeliveryDashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/users" element={
+                      <ProtectedRoute adminOnly>
+                        <AdminUsers />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/featured-posters" element={
+                      <ProtectedRoute adminOnly>
+                        <AdminFeaturedPosters />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/hero-items" element={
+                      <ProtectedRoute adminOnly>
+                        <AdminHeroItems />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/custom-orders" element={
+                      <ProtectedRoute adminOnly>
+                        <AdminCustomOrders />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/custom-approvals" element={
+                      <ProtectedRoute adminOnly>
+                        <AdminCustomApprovals />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/bulk-import" element={
+                      <ProtectedRoute adminOnly>
+                        <AdminBulkImport />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/analytics" element={
+                      <ProtectedRoute adminOnly>
+                        <AdminAnalytics />
+                      </ProtectedRoute>
+                    } />
+                    {/* 404 Catch-all */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </VybePageTransitions>
+            </main>
+            <Footer />
+            <BackToTop />
+          </div>
+        </SmoothScroll>
+      </AnalyticsProvider>
     </ErrorBoundary>
   )
 }
