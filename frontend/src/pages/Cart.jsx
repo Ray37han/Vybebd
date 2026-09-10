@@ -189,130 +189,141 @@ export default function Cart() {
         ? 'bg-gradient-to-b from-moon-night via-moon-midnight to-moon-night'
         : 'bg-gradient-to-b from-blue-50 via-purple-50 to-pink-50'
     }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className={`text-4xl font-bold mb-8 ${
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full min-w-0">
+        <h1 className={`text-3xl sm:text-4xl font-bold mb-6 sm:mb-8 ${
           darkMode
             ? 'moon-gradient-text animate-glow'
             : 'bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent'
         }`}>Shopping Cart</h1>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 w-full min-w-0">
           {/* Cart Items */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4 min-w-0">
             {validItems.map((item) => {
               const sizePrice = getItemPrice(item);
               const strikePrice = getItemOriginalPrice(item);
               return (
                 <div 
                   key={item._id} 
-                  className={`p-4 flex gap-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
+                  className={`p-3.5 sm:p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
                     darkMode
                       ? 'bg-moon-midnight/50 border-moon-gold/20 hover:border-moon-gold/40'
                       : 'bg-white border-purple-200 hover:border-purple-300'
                   }`}
                 >
-                  <img
-                    src={item.product?.images?.[0]?.url}
-                    alt={item.product.name}
-                    className="w-24 h-24 object-cover rounded-lg"
-                  />
-                  <div className="flex-1">
-                    <h3 className={`font-semibold text-lg mb-1 ${
-                      darkMode ? 'text-moon-silver' : 'text-gray-900'
-                    }`}>{item.product?.name}</h3>
-                    {/* Smart label: wobbler shows product type, poster shows size/tier/frame */}
-                    <p className={`text-sm mb-2 ${
-                      darkMode ? 'text-moon-silver/60' : 'text-gray-600'
-                    }`}>
-                      {item.product?.productType === 'wobbler'
-                        ? 'Solar Wobbler · Solar Powered'
-                        : `Option: ${item.tier || 'Standard'} • Size: ${item.size}${item.frame && item.frame !== 'No Frame' ? ` • Frame: ${item.frame}` : ''}`
-                      }
-                    </p>
-                    {item.customization && (
-                      <div className={`text-xs mb-2 space-y-1 ${
-                        darkMode ? 'text-moon-gold/80' : 'text-purple-600'
-                      }`}>
-                        <p>✨ Customized Product</p>
-                        {item.customization.uploadedImageUrl && (
-                          <p>📸 Custom Image Uploaded</p>
-                        )}
-                        {item.customization.textOverlay && (
-                          <p>✍️ Text: {item.customization.textOverlay}</p>
-                        )}
-                        {item.customization.frameColor && (
-                          <p>🖼️ Frame: {item.customization.frameColor}</p>
-                        )}
+                  <div className="flex gap-3 sm:gap-4">
+                    <img
+                      src={item.product?.images?.[0]?.url}
+                      alt={item.product?.name || 'Product'}
+                      className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xl shrink-0"
+                    />
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h3 className={`font-semibold text-base sm:text-lg truncate ${
+                            darkMode ? 'text-moon-silver' : 'text-gray-900'
+                          }`} title={item.product?.name}>
+                            {item.product?.name}
+                          </h3>
+                          {/* Smart label: wobbler shows product type, poster shows size/tier/frame */}
+                          <p className={`text-xs sm:text-sm mt-0.5 line-clamp-2 ${
+                            darkMode ? 'text-moon-silver/60' : 'text-gray-600'
+                          }`}>
+                            {item.product?.productType === 'wobbler'
+                              ? 'Solar Wobbler · Solar Powered'
+                              : `Option: ${item.tier || 'Standard'} • Size: ${item.size}${item.frame && item.frame !== 'No Frame' ? ` • Frame: ${item.frame}` : ''}`
+                            }
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleRemove(item._id)}
+                          className={`shrink-0 p-1.5 sm:p-2 rounded-lg transition-colors -mr-1 -mt-1 ${
+                            darkMode
+                              ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10'
+                              : 'text-red-500 hover:text-red-700 hover:bg-red-50'
+                          }`}
+                          aria-label="Remove item"
+                        >
+                          <FiTrash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
                       </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <p className={`text-lg font-bold ${
-                        darkMode ? 'text-moon-gold' : 'text-purple-600'
-                      }`}>৳{sizePrice}</p>
-                      <span className={`text-xs line-through ${
-                        darkMode ? 'text-moon-silver/40' : 'text-gray-400'
-                      }`}>
-                        ৳{strikePrice}
-                      </span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                        darkMode ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'
-                      }`}>
-                        25% OFF
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end justify-between">
-                    <button
-                      onClick={() => handleRemove(item._id)}
-                      className={`transition-colors p-2 rounded-lg ${
-                        darkMode
-                          ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10'
-                          : 'text-red-500 hover:text-red-700 hover:bg-red-50'
-                      }`}
-                      aria-label="Remove item"
-                    >
-                      <FiTrash2 className="w-5 h-5" />
-                    </button>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleQuantityChange(item, item.quantity - 1)}
-                        disabled={item.quantity <= 1}
-                        className={`w-9 h-9 rounded-lg border font-bold text-lg transition-all flex items-center justify-center ${
-                          item.quantity <= 1
-                            ? darkMode
-                              ? 'border-moon-silver/20 text-moon-silver/30 cursor-not-allowed'
-                              : 'border-gray-200 text-gray-300 cursor-not-allowed'
-                            : darkMode
-                              ? 'border-moon-gold/30 hover:bg-moon-gold hover:text-moon-night text-moon-gold active:scale-95'
-                              : 'border-purple-300 hover:bg-purple-600 hover:text-white text-purple-600 active:scale-95'
-                        }`}
-                      >
-                        −
-                      </button>
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 1;
-                          handleQuantityChange(item, Math.max(1, val));
-                        }}
-                        className={`w-14 h-9 text-center font-semibold border rounded-lg focus:outline-none transition-all ${
-                          darkMode
-                            ? 'bg-moon-night/50 border-moon-gold/30 text-moon-silver focus:border-moon-gold'
-                            : 'bg-white border-purple-200 text-gray-900 focus:border-purple-600'
-                        }`}
-                      />
-                      <button
-                        onClick={() => handleQuantityChange(item, item.quantity + 1)}
-                        className={`w-9 h-9 rounded-lg border font-bold text-lg transition-all flex items-center justify-center ${
-                          darkMode
-                            ? 'border-moon-gold/30 hover:bg-moon-gold hover:text-moon-night text-moon-gold'
-                            : 'border-purple-300 hover:bg-purple-600 hover:text-white text-purple-600'
-                        } active:scale-95`}
-                      >
-                        +
-                      </button>
+
+                      {item.customization && (
+                        <div className={`text-xs my-1.5 space-y-0.5 ${
+                          darkMode ? 'text-moon-gold/80' : 'text-purple-600'
+                        }`}>
+                          <p>✨ Customized Product</p>
+                          {item.customization.uploadedImageUrl && (
+                            <p>📸 Custom Image Uploaded</p>
+                          )}
+                          {item.customization.textOverlay && (
+                            <p className="truncate">✍️ Text: {item.customization.textOverlay}</p>
+                          )}
+                          {item.customization.frameColor && (
+                            <p>🖼️ Frame: {item.customization.frameColor}</p>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="mt-3 pt-2.5 border-t border-dashed flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 border-gray-200/50 dark:border-white/10">
+                        <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap min-w-0">
+                          <p className={`text-base sm:text-lg font-bold ${
+                            darkMode ? 'text-moon-gold' : 'text-purple-600'
+                          }`}>৳{sizePrice}</p>
+                          <span className={`text-xs line-through ${
+                            darkMode ? 'text-moon-silver/40' : 'text-gray-400'
+                          }`}>
+                            ৳{strikePrice}
+                          </span>
+                          <span className={`text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded ${
+                            darkMode ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'
+                          }`}>
+                            25% OFF
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-auto">
+                          <button
+                            onClick={() => handleQuantityChange(item, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
+                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg border font-bold text-sm sm:text-base transition-all flex items-center justify-center ${
+                              item.quantity <= 1
+                                ? darkMode
+                                  ? 'border-moon-silver/20 text-moon-silver/30 cursor-not-allowed'
+                                  : 'border-gray-200 text-gray-300 cursor-not-allowed'
+                                : darkMode
+                                  ? 'border-moon-gold/30 hover:bg-moon-gold hover:text-moon-night text-moon-gold active:scale-95'
+                                  : 'border-purple-300 hover:bg-purple-600 hover:text-white text-purple-600 active:scale-95'
+                            }`}
+                          >
+                            −
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value) || 1;
+                              handleQuantityChange(item, Math.max(1, val));
+                            }}
+                            className={`w-10 sm:w-12 h-7 sm:h-8 text-center text-xs sm:text-sm font-semibold border rounded-lg focus:outline-none transition-all ${
+                              darkMode
+                                ? 'bg-moon-night/50 border-moon-gold/30 text-moon-silver focus:border-moon-gold'
+                                : 'bg-white border-purple-200 text-gray-900 focus:border-purple-600'
+                            }`}
+                          />
+                          <button
+                            onClick={() => handleQuantityChange(item, item.quantity + 1)}
+                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg border font-bold text-sm sm:text-base transition-all flex items-center justify-center ${
+                              darkMode
+                                ? 'border-moon-gold/30 hover:bg-moon-gold hover:text-moon-night text-moon-gold'
+                                : 'border-purple-300 hover:bg-purple-600 hover:text-white text-purple-600'
+                            } active:scale-95`}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -321,8 +332,8 @@ export default function Cart() {
           </div>
 
           {/* Summary */}
-          <div className="lg:col-span-1">
-            <div className={`p-6 sticky top-24 rounded-2xl border shadow-lg ${
+          <div className="lg:col-span-1 min-w-0">
+            <div className={`p-5 sm:p-6 sticky top-24 rounded-2xl border shadow-lg ${
               darkMode
                 ? 'bg-moon-midnight/50 border-moon-gold/20'
                 : 'bg-white border-purple-200'
@@ -362,11 +373,11 @@ export default function Cart() {
                   </div>
                 )}
                 
-                <div className={`flex justify-between items-center ${
+                <div className={`flex justify-between items-center gap-2 ${
                   darkMode ? 'text-moon-silver/80' : 'text-gray-700'
                 }`}>
-                  <span>Shipping</span>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-300">
+                  <span className="shrink-0">Shipping</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-300 text-right">
                     Dhaka ৳100 • Outside ৳140
                   </span>
                 </div>

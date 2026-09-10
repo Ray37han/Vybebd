@@ -21,6 +21,8 @@ frontend/.env.vercel
 # Sensitive documentation & local context
 MASTER_CONTEXT.md
 *MASTER_CONTEXT*
+*Master Prompt*
+*Prompt*.md
 
 # Build outputs
 dist/

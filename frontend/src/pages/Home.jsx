@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import AnnouncementBar from '../components/AnnouncementBar';
 import HomeDecorSpotlight from '../components/HomeDecorSpotlight';
 import HeroCarousel from '../components/HeroCarousel';
 import CollectionGrid from '../components/CollectionGrid';
@@ -114,9 +113,6 @@ export default function Home() {
           ? 'bg-gradient-to-br from-moon-midnight via-moon-space to-moon-midnight' 
           : 'bg-white'
       }`}>
-        {/* Announcement Bar */}
-        <AnnouncementBar />
-
         {/* Hero Section */}
         <HeroCarousel darkMode={darkMode} />
 
