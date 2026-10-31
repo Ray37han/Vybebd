@@ -25,6 +25,7 @@ import { appendOrderToSheet, updateOrderInSheet } from '../services/googleSheets
 import { sendOrderNotification, sendStatusNotification } from '../services/whatsapp.js';
 import { sendTelegramOrderNotification } from '../utils/telegramNotifier.js';
 import courierAdapter, { SUPPORTED_COURIERS } from '../services/courier/index.js';
+import { sendCapiPurchase } from '../services/metaCapi.js';
 
 const router = express.Router();
 
@@ -210,6 +211,7 @@ router.post('/create', orderRateLimiter, createOrderValidators, async (req, res)
       pageUrl = '',
       products: productsInput = [],
       deliveryCharge: deliveryChargeInput,
+      browser = {},  // { fbp, fbc } from client Meta Pixel cookies
     } = req.body;
 
     const qty = parseInt(quantity, 10);
@@ -288,7 +290,16 @@ router.post('/create', orderRateLimiter, createOrderValidators, async (req, res)
       console.error('[Telegram] Notification failed:', err);
     });
 
-    /* 8. Respond immediately */
+    /* 8. Meta CAPI Purchase event (non-blocking) */
+    sendCapiPurchase(newOrder.toObject(), {
+      clientIp: ip,
+      userAgent: req.headers['user-agent'] || '',
+      browser,  // { fbp, fbc } from client
+    }).catch(err => {
+      console.error('[CAPI] Purchase send failed:', err.message);
+    });
+
+    /* 9. Respond immediately */
     return res.status(201).json({
       success: true,
       message: 'Order placed successfully!',

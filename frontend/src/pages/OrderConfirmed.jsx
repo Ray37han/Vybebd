@@ -8,6 +8,7 @@
 import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { trackPurchase } from '../utils/metaPixel';
 
 /* Simple confetti burst using canvas */
 function burstConfetti(canvas) {
@@ -79,6 +80,24 @@ export default function OrderConfirmed() {
     if (!canvasRef.current || !state?.orderId) return;
     const cleanup = burstConfetti(canvasRef.current);
     return cleanup;
+  }, [state]);
+
+  /* Meta Pixel Purchase event — fires once per orderId */
+  useEffect(() => {
+    if (!state?.orderId) return;
+    // Build products array from state (may have full products list or fallback)
+    const products = state.products?.length > 0
+      ? state.products.map((p) => ({
+          productId: p.productId || p.id || '',
+          quantity: p.quantity || 1,
+          price: p.price || 0,
+        }))
+      : [{
+          productId: state.productId || '',
+          quantity: state.quantity || 1,
+          price: state.total ? Number(state.total) - (state.deliveryCharge || 0) : 0,
+        }];
+    trackPurchase(state.orderId, products, state.total || 0);
   }, [state]);
 
   if (!state?.orderId) return null;

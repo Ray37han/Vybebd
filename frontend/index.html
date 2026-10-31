@@ -49,16 +49,25 @@
     <link rel="dns-prefetch" href="https://api.vybebd.store" />
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
     <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+    <!-- Meta Pixel CDN preconnect -->
+    <link rel="preconnect" href="https://connect.facebook.net" crossorigin />
+    <link rel="dns-prefetch" href="https://connect.facebook.net" />
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Outfit:wght@300;400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <!-- Meta Pixel Code (Fallback for No-JS) -->
+    <!--
+      Meta Pixel:
+      - Base code is injected asynchronously via src/utils/metaPixel.js (initMetaPixel)
+        to keep VITE_META_PIXEL_ID out of the static HTML and support Vite env substitution.
+      - The noscript fallback below is for users with JS disabled.
+    -->
+    <!-- Meta Pixel Noscript Fallback (No-JS only) -->
     <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id=1246045817654160&ev=PageView&noscript=1"
     /></noscript>
-    <!-- End Meta Pixel Code -->
+    <!-- End Meta Pixel Noscript -->
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

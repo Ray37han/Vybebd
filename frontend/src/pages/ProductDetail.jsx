@@ -15,6 +15,7 @@ import StickyAddToCart from '../components/StickyAddToCart';
 import WobblerExtras from '../components/WobblerExtras';
 import CompleteYourSpace from '../components/CompleteYourSpace';
 import toast from 'react-hot-toast';
+import { trackViewContent, trackAddToCart as pixelTrackAddToCart } from '../utils/metaPixel';
 
 // ── Product UI Configuration (module-level) ───────────────────────────────────────
 // Controls which variation selectors appear in ProductDetail based on product type.
@@ -94,12 +95,14 @@ export default function ProductDetail() {
       const response = await productsAPI.getOne(id);
       const productData = response.data || response;
       setProduct(productData);
-      // Track product view
+      // Internal analytics
       trackEvent('product_view', {
         productId: productData._id,
         productName: productData.name,
         productCategory: productData.category,
       });
+      // Meta Pixel ViewContent
+      trackViewContent(productData);
     } catch (error) {
       toast.error('Product not found');
       navigate('/products');
@@ -133,7 +136,7 @@ export default function ProductDetail() {
         _id: Date.now().toString(),
       });
 
-      // Track add-to-cart event
+      // Internal analytics
       trackEvent('add_to_cart', {
         productId: product._id,
         productName: product.name,
@@ -141,6 +144,9 @@ export default function ProductDetail() {
         quantity,
         price: product.basePrice,
       });
+
+      // Meta Pixel AddToCart (debounce-guarded)
+      pixelTrackAddToCart(product, quantity);
 
       console.log('Added to local cart');
       toast.success(<span><FiCheckCircle className="inline mr-2" /> Added to cart!</span>);

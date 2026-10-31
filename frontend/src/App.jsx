@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { AnalyticsProvider } from './context/AnalyticsContext'
 import SmoothScroll from './components/SmoothScroll'
 import './components/PageTransitions.css'
+import { initMetaPixel, trackPageView } from './utils/metaPixel'
 
 // Critical storefront entry: static import for fastest initial paint
 import Home from './pages/Home'
@@ -83,8 +84,15 @@ class ErrorBoundary extends Component {
 function App() {
   const location = useLocation()
 
+  // Init Meta Pixel once on first app mount
+  useEffect(() => {
+    initMetaPixel()
+  }, [])
+
+  // Scroll-to-top + SPA PageView on route change
   useEffect(() => {
     window.scrollTo(0, 0)
+    trackPageView(location.pathname)
   }, [location.pathname])
 
   return (
