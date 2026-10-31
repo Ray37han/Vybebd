@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuthStore, useCartStore } from '../store';
+import { trackInitiateCheckout, getMetaBrowserContext } from '../utils/metaPixel';
 
 /* ─── District list ───────────────────────────────────────────────────────── */
 const BD_DISTRICTS = [
@@ -40,7 +41,7 @@ const BD_PHONE_RE = /^01[3-9]\d{8}$/;
 
 /* ─── Helper: get API base URL ───────────────────────────────────────────── */
 const API_BASE = import.meta.env.PROD
-  ? 'https://api.vybebd.store/api'
+  ? 'https://vybe-backend-93eu.onrender.com/api'
   : ((import.meta.env.VITE_API_URL || '').trim() || 'http://localhost:5001/api');
 
 /* ─── Spinner component ───────────────────────────────────────────────────── */
@@ -120,6 +121,19 @@ export default function QuickCheckout() {
   const [errors,    setErrors]    = useState({});
   const [loading,   setLoading]   = useState(false);
   const [apiError,  setApiError]  = useState('');
+
+  /* Fire InitiateCheckout once on checkout page mount */
+  useEffect(() => {
+    if (fromCart && cartItems?.length > 0) {
+      trackInitiateCheckout(cartItems, total);
+    } else if (!fromCart && form.price) {
+      trackInitiateCheckout(
+        [{ product: { _id: form.productId, name: form.productName }, quantity: form.quantity }],
+        total
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* Recompute total whenever price or quantity changes */
   const qty = parseInt(form.quantity, 10) || 1;
@@ -238,10 +252,12 @@ export default function QuickCheckout() {
         pageUrl:       window.location.href,
       };
 
+      const browser = getMetaBrowserContext();
+
       const res = await fetch(`${API_BASE}/pipeline/create`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(payload),
+        body:    JSON.stringify({ ...payload, browser }),
       });
 
       const data = await res.json();

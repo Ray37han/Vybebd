@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // In production, force the new DigitalOcean API URL to bypass any stale Vercel dashboard environment variables
 const API_URL = import.meta.env.PROD 
-  ? 'https://api.vybebd.store/api'
+  ? 'https://vybe-backend-93eu.onrender.com/api'
   : ((import.meta.env.VITE_API_BASE_URL || '').trim() || (import.meta.env.VITE_API_URL || '').trim() || 'http://localhost:5001/api');
 
 const api = axios.create({

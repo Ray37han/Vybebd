@@ -19,7 +19,7 @@ import ReactPixel from 'react-facebook-pixel';
 const AnalyticsContext = createContext(null);
 
 // Resolve API/socket URL robustly for production deploys.
-const PRODUCTION_API_URL = 'https://api.vybebd.store/api';
+const PRODUCTION_API_URL = 'https://vybe-backend-93eu.onrender.com/api';
 
 function resolveApiBase() {
   if (import.meta.env.PROD) {
